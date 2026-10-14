@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+  <h2>{{ title }}</h2>
+  <form method="post">
+    <label>Email</label>
+    <input type="email" name="email" required>
+    <label>Password</label>
+    <input type="password" name="password" required>
+    <button class="btn">{{ title }}</button>
+  </form>
+  <p>
+    {% if title == "Register" %}
+      Already have an account? <a href="/login">Log in</a>
+    {% else %}
+      New here? <a href="/register">Create an account</a>
+    {% endif %}
+  </p>
+</div>
+{% endblock %}

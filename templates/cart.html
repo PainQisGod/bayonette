@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <h2>Your Cart</h2>
+  {% for item in items %}
+  <div class="cartRow">
+    <div><b>{{ item.product.name }}</b><br><small>${{ item.product.price }}</small></div>
+    <div>
+      <form class="inline" method="post" action="/change/{{ item.product.id }}/-1"><button>-</button></form>
+      {{ item.quantity }}
+      <form class="inline" method="post" action="/change/{{ item.product.id }}/1"><button>+</button></form>
+    </div>
+  </div>
+  {% else %}
+  <p>Your cart is empty.</p>
+  {% endfor %}
+  <div class="total">Total: ${{ total }}</div>
+  {% if items %}
+  <form method="post" action="/checkout"><button class="btn">Checkout</button></form>
+  {% endif %}
+</section>
+{% endblock %}

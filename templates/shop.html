@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <h2>{% if q %}Results for "{{ q }}"{% else %}All Products{% endif %}</h2>
+  <div class="grid4">
+    {% for p in products %}
+    <div class="product">
+      <div class="poster" style="background: linear-gradient(155deg, hsl({{ p.hue }},70%,48%), hsl({{ p.hue + 40 }},60%,22%))">{{ p.name }}</div>
+      <div class="info">
+        <small>{{ p.brand }}</small><br>
+        <small>{{ p.description }}</small><br><br>
+        <form method="post" action="/add/{{ p.id }}">
+          <button class="btn">Add to cart - ${{ p.price }}</button>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <p>No products found.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
