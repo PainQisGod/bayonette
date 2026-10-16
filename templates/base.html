@@ -14,6 +14,7 @@
       <nav>
         <a href="/">Shop</a>
         <a href="/orders">My Orders</a>
+        {% if session.is_admin %}<a href="/admin">Admin</a>{% endif %}
       </nav>
       <form action="/"><input name="q" placeholder="Search products" value="{{ q or '' }}"></form>
       {% if session.email %}
