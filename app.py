@@ -30,11 +30,15 @@ def db():
 def setup():
     conn = db()
     conn.executescript("""
-        CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, email TEXT UNIQUE, password TEXT);
+        CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, email TEXT UNIQUE, password TEXT, is_admin INTEGER DEFAULT 0);
         CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT, brand TEXT, price INTEGER, hue INTEGER, description TEXT);
         CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY, user_id INTEGER, total INTEGER, created TEXT DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS order_items (order_id INTEGER, product_id INTEGER, quantity INTEGER);
     """)
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass  # column already exists
     if conn.execute("SELECT COUNT(*) FROM products").fetchone()[0] == 0:
         conn.executemany("INSERT INTO products (name, brand, price, hue, description) VALUES (?,?,?,?,?)", PRODUCTS)
     conn.commit()
@@ -79,6 +83,8 @@ def cart_items():
     total = 0
     for id, quantity in session.get("cart", {}).items():
         product = conn.execute("SELECT * FROM products WHERE id = ?", (id,)).fetchone()
+        if product is None:
+            continue
         items.append({"product": product, "quantity": quantity})
         total += product["price"] * quantity
     conn.close()
@@ -118,8 +124,8 @@ def orders():
     rows = conn.execute("SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC", (session["user_id"],)).fetchall()
     orders = []
     for row in rows:
-        names = conn.execute("""SELECT p.name, i.quantity FROM order_items i
-                                JOIN products p ON p.id = i.product_id WHERE i.order_id = ?""", (row["id"],)).fetchall()
+        names = conn.execute("""SELECT COALESCE(p.name, '(removed item)') AS name, i.quantity FROM order_items i
+                                LEFT JOIN products p ON p.id = i.product_id WHERE i.order_id = ?""", (row["id"],)).fetchall()
         orders.append({"order": row, "items": names})
     conn.close()
     return render_template("orders.html", orders=orders)
@@ -131,8 +137,9 @@ def register():
         email = request.form["email"].lower()
         password = generate_password_hash(request.form["password"])
         conn = db()
+        is_admin = 1 if conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0 else 0
         try:
-            user_id = conn.execute("INSERT INTO users (email, password) VALUES (?, ?)", (email, password)).lastrowid
+            user_id = conn.execute("INSERT INTO users (email, password, is_admin) VALUES (?, ?, ?)", (email, password, is_admin)).lastrowid
             conn.commit()
         except sqlite3.IntegrityError:
             flash("That email is already registered.")
@@ -141,6 +148,7 @@ def register():
             conn.close()
         session["user_id"] = user_id
         session["email"] = email
+        session["is_admin"] = is_admin
         return redirect("/")
     return render_template("login.html", title="Register")
 
@@ -154,6 +162,7 @@ def login():
         if user and check_password_hash(user["password"], request.form["password"]):
             session["user_id"] = user["id"]
             session["email"] = user["email"]
+            session["is_admin"] = user["is_admin"]
             return redirect("/")
         flash("Wrong email or password.")
         return redirect("/login")
@@ -164,7 +173,58 @@ def login():
 def logout():
     session.pop("user_id", None)
     session.pop("email", None)
+    session.pop("is_admin", None)
     return redirect("/")
+
+
+def is_admin():
+    return session.get("is_admin") == 1
+
+
+@app.route("/admin")
+def admin():
+    if not is_admin():
+        return redirect("/")
+    conn = db()
+    products = conn.execute("SELECT * FROM products ORDER BY id").fetchall()
+    conn.close()
+    return render_template("admin.html", products=products)
+
+
+@app.route("/admin/new", methods=["GET", "POST"])
+@app.route("/admin/edit/<int:id>", methods=["GET", "POST"])
+def product_form(id=None):
+    if not is_admin():
+        return redirect("/")
+    conn = db()
+    product = None
+    if id:
+        product = conn.execute("SELECT * FROM products WHERE id = ?", (id,)).fetchone()
+    if request.method == "POST":
+        data = (request.form["name"], request.form["brand"], int(request.form["price"]),
+                int(request.form["hue"]), request.form["description"])
+        if id:
+            conn.execute("UPDATE products SET name=?, brand=?, price=?, hue=?, description=? WHERE id=?", data + (id,))
+        else:
+            conn.execute("INSERT INTO products (name, brand, price, hue, description) VALUES (?,?,?,?,?)", data)
+        conn.commit()
+        conn.close()
+        flash("Saved.")
+        return redirect("/admin")
+    conn.close()
+    return render_template("admin_form.html", product=product)
+
+
+@app.route("/admin/delete/<int:id>", methods=["POST"])
+def delete_product(id):
+    if not is_admin():
+        return redirect("/")
+    conn = db()
+    conn.execute("DELETE FROM products WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+    flash("Product deleted.")
+    return redirect("/admin")
 
 
 setup()
