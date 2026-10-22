@@ -31,7 +31,7 @@ def setup():
     conn = db()
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, email TEXT UNIQUE, password TEXT, is_admin INTEGER DEFAULT 0);
-        CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT, brand TEXT, price INTEGER, hue INTEGER, description TEXT);
+        CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT, brand TEXT, price INTEGER, hue INTEGER, description TEXT, stock INTEGER DEFAULT 10);
         CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY, user_id INTEGER, total INTEGER, created TEXT DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS order_items (order_id INTEGER, product_id INTEGER, quantity INTEGER);
     """)
@@ -39,6 +39,10 @@ def setup():
         conn.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
         pass  # column already exists
+    try:
+        conn.execute("ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 10")
+    except sqlite3.OperationalError:
+        pass
     if conn.execute("SELECT COUNT(*) FROM products").fetchone()[0] == 0:
         conn.executemany("INSERT INTO products (name, brand, price, hue, description) VALUES (?,?,?,?,?)", PRODUCTS)
     conn.commit()
@@ -74,17 +78,32 @@ def product(id):
 @app.route("/add/<int:id>", methods=["POST"])
 def add(id):
     cart = session.get("cart", {})
-    cart[str(id)] = cart.get(str(id), 0) + 1
-    session["cart"] = cart
+    conn = db()
+    p = conn.execute("SELECT stock FROM products WHERE id = ?", (id,)).fetchone()
+    conn.close()
+    if p is None:
+        return redirect("/")
+    if cart.get(str(id), 0) >= p["stock"]:
+        flash("Sorry, no more of that item in stock.")
+    else:
+        cart[str(id)] = cart.get(str(id), 0) + 1
+        session["cart"] = cart
     return redirect(request.referrer or "/")
 
 
 @app.route("/change/<int:id>/<int:amount>", methods=["POST"])
 def change(id, amount):
     cart = session.get("cart", {})
-    cart[str(id)] = cart.get(str(id), 0) + amount
-    if cart[str(id)] <= 0:
-        del cart[str(id)]
+    conn = db()
+    p = conn.execute("SELECT stock FROM products WHERE id = ?", (id,)).fetchone()
+    conn.close()
+    new = cart.get(str(id), 0) + amount
+    if p is not None and new > p["stock"]:
+        flash("Only " + str(p["stock"]) + " in stock.")
+    elif new <= 0:
+        cart.pop(str(id), None)
+    else:
+        cart[str(id)] = new
     session["cart"] = cart
     return redirect("/cart")
 
@@ -117,10 +136,15 @@ def checkout():
     items, total = cart_items()
     if not items:
         return redirect("/cart")
+    for item in items:
+        if item["quantity"] > item["product"]["stock"]:
+            flash("Not enough stock for " + item["product"]["name"] + ".")
+            return redirect("/cart")
     conn = db()
     order_id = conn.execute("INSERT INTO orders (user_id, total) VALUES (?, ?)", (session["user_id"], total)).lastrowid
     for item in items:
         conn.execute("INSERT INTO order_items VALUES (?, ?, ?)", (order_id, item["product"]["id"], item["quantity"]))
+        conn.execute("UPDATE products SET stock = stock - ? WHERE id = ?", (item["quantity"], item["product"]["id"]))
     conn.commit()
     conn.close()
     session["cart"] = {}
@@ -214,11 +238,11 @@ def product_form(id=None):
         product = conn.execute("SELECT * FROM products WHERE id = ?", (id,)).fetchone()
     if request.method == "POST":
         data = (request.form["name"], request.form["brand"], int(request.form["price"]),
-                int(request.form["hue"]), request.form["description"])
+                int(request.form["hue"]), request.form["description"], int(request.form["stock"]))
         if id:
-            conn.execute("UPDATE products SET name=?, brand=?, price=?, hue=?, description=? WHERE id=?", data + (id,))
+            conn.execute("UPDATE products SET name=?, brand=?, price=?, hue=?, description=?, stock=? WHERE id=?", data + (id,))
         else:
-            conn.execute("INSERT INTO products (name, brand, price, hue, description) VALUES (?,?,?,?,?)", data)
+            conn.execute("INSERT INTO products (name, brand, price, hue, description, stock) VALUES (?,?,?,?,?,?)", data)
         conn.commit()
         conn.close()
         flash("Saved.")
