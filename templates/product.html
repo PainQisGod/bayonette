@@ -8,7 +8,12 @@
     <p>{{ p.description }}</p>
     <h2 style="border:0">${{ p.price }}</h2>
     <form method="post" action="/add/{{ p.id }}">
-      <button class="btn">Add to cart</button>
+      {% if p.stock > 0 %}
+        <button class="btn">Add to cart</button>
+        {% if p.stock <= 3 %}<small>Only {{ p.stock }} left</small>{% endif %}
+      {% else %}
+        <button class="btn outline" disabled>Sold out</button>
+      {% endif %}
     </form>
     <a href="/">← Back to shop</a>
   </div>
