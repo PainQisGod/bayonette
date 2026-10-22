@@ -9,6 +9,8 @@
     <input name="brand" value="{{ product.brand if product }}" required>
     <label>Price ($)</label>
     <input type="number" name="price" min="1" value="{{ product.price if product }}" required>
+    <label>Stock</label>
+    <input type="number" name="stock" min="0" value="{{ product.stock if product else 10 }}" required>
     <label>Color (0-360)</label>
     <input type="number" name="hue" min="0" max="360" value="{{ product.hue if product else 200 }}" required>
     <label>Description</label>
