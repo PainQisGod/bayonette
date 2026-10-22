@@ -59,6 +59,18 @@ def shop():
     return render_template("shop.html", products=products, q=q)
 
 
+@app.route("/product/<int:id>")
+def product(id):
+    conn = db()
+    p = conn.execute("SELECT * FROM products WHERE id = ?", (id,)).fetchone()
+    if p is None:
+        conn.close()
+        return redirect("/")
+    more = conn.execute("SELECT * FROM products WHERE brand = ? AND id != ? LIMIT 4", (p["brand"], id)).fetchall()
+    conn.close()
+    return render_template("product.html", p=p, more=more)
+
+
 @app.route("/add/<int:id>", methods=["POST"])
 def add(id):
     cart = session.get("cart", {})
