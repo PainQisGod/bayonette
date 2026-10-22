@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero">
+  <div class="poster" style="background: linear-gradient(155deg, hsl({{ p.hue }},70%,48%), hsl({{ p.hue + 40 }},60%,22%))">{{ p.name }}</div>
+  <div class="heroText">
+    <div class="label">{{ p.brand }}</div>
+    <h1>{{ p.name }}</h1>
+    <p>{{ p.description }}</p>
+    <h2 style="border:0">${{ p.price }}</h2>
+    <form method="post" action="/add/{{ p.id }}">
+      <button class="btn">Add to cart</button>
+    </form>
+    <a href="/">← Back to shop</a>
+  </div>
+</div>
+
+{% if more %}
+<section>
+  <h2>More from {{ p.brand }}</h2>
+  <div class="grid4">
+    {% for m in more %}
+    <div class="product">
+      <a href="/product/{{ m.id }}">
+        <div class="poster" style="background: linear-gradient(155deg, hsl({{ m.hue }},70%,48%), hsl({{ m.hue + 40 }},60%,22%))">{{ m.name }}</div>
+      </a>
+      <div class="info"><small>${{ m.price }}</small></div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}
