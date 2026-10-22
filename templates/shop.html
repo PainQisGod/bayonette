@@ -5,7 +5,9 @@
   <div class="grid4">
     {% for p in products %}
     <div class="product">
+      <a href="/product/{{ p.id }}">
       <div class="poster" style="background: linear-gradient(155deg, hsl({{ p.hue }},70%,48%), hsl({{ p.hue + 40 }},60%,22%))">{{ p.name }}</div>
+      </a>
       <div class="info">
         <small>{{ p.brand }}</small><br>
         <small>{{ p.description }}</small><br><br>
