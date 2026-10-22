@@ -12,7 +12,12 @@
         <small>{{ p.brand }}</small><br>
         <small>{{ p.description }}</small><br><br>
         <form method="post" action="/add/{{ p.id }}">
-          <button class="btn">Add to cart - ${{ p.price }}</button>
+          {% if p.stock > 0 %}
+            <button class="btn">Add to cart - ${{ p.price }}</button>
+            {% if p.stock <= 3 %}<small>Only {{ p.stock }} left</small>{% endif %}
+          {% else %}
+            <button class="btn outline" disabled>Sold out</button>
+          {% endif %}
         </form>
       </div>
     </div>
