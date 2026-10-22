@@ -4,7 +4,7 @@
   <h2>Admin <a class="btn" href="/admin/new">+ New product</a></h2>
   {% for p in products %}
   <div class="row">
-    <span><b>{{ p.name }}</b> <small>{{ p.brand }} · ${{ p.price }}</small></span>
+    <span><b>{{ p.name }}</b> <small>{{ p.brand }} · ${{ p.price }} · {{ p.stock }} in stock</small></span>
     <span>
       <a href="/admin/edit/{{ p.id }}">Edit</a>
       <form class="inline" method="post" action="/admin/delete/{{ p.id }}" onsubmit="return confirm('Delete this product?')">
