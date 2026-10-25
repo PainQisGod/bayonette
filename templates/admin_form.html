@@ -1,21 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="page">
-  <h2>{% if product %}Edit product{% else %}New product{% endif %}</h2>
-  <form method="post">
-    <label>Name</label>
-    <input name="name" value="{{ product.name if product }}" required>
-    <label>Brand</label>
-    <input name="brand" value="{{ product.brand if product }}" required>
-    <label>Price ($)</label>
-    <input type="number" name="price" min="1" value="{{ product.price if product }}" required>
-    <label>Stock</label>
-    <input type="number" name="stock" min="0" value="{{ product.stock if product else 10 }}" required>
-    <label>Color (0-360)</label>
-    <input type="number" name="hue" min="0" max="360" value="{{ product.hue if product else 200 }}" required>
-    <label>Description</label>
-    <input name="description" value="{{ product.description if product }}" required>
-    <button class="btn">Save</button>
-  </form>
-</div>
+<section>
+  <h2>All Orders <a href="/admin">← Products</a></h2>
+  {% for o in orders %}
+  <div class="box">
+    <b>Order #{{ o.order.id }}</b> <small>{{ o.order.email }} · {{ o.order.created }}</small>
+    {% for i in o["items"] %}<div>{{ i.quantity }} x {{ i.name }}</div>{% endfor %}
+    <b>Total: ${{ o.order.total }}</b>
+    <form method="post" action="/admin/orders/{{ o.order.id }}">
+      <select name="status">
+        {% for s in statuses %}
+        <option value="{{ s }}" {% if s == o.order.status %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn">Update</button>
+    </form>
+  </div>
+  {% else %}
+  <p>No orders yet.</p>
+  {% endfor %}
+</section>
 {% endblock %}
