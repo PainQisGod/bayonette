@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <section>
-  <h2>Admin <span><a href="/admin/orders">Orders</a> <a class="btn" href="/admin/new">+ New product</a></span></h2>
+  <h2>Admin <span><a href="/admin/dashboard">Dashboard</a> <a href="/admin/orders">Orders</a> <a class="btn" href="/admin/new">+ New product</a></span></h2>
   {% for p in products %}
   <div class="row">
     <span><b>{{ p.name }}</b> <small>{{ p.brand }} · ${{ p.price }} · {{ p.stock }} in stock</small></span>
