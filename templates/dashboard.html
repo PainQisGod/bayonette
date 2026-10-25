@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <h2>Dashboard <a href="/admin">← Products</a></h2>
+
+  <div class="stats">
+    <div class="stat"><small>Total sales</small><b>${{ revenue }}</b></div>
+    <div class="stat"><small>Orders</small><b>{{ order_count }}</b></div>
+    <div class="stat"><small>Customers</small><b>{{ customers }}</b></div>
+    <div class="stat"><small>Average order</small><b>${{ average }}</b></div>
+  </div>
+
+  <div class="two">
+    <div>
+      <h2>Orders by status</h2>
+      {% for status, n in counts.items() %}
+      <div class="row"><span>{{ status }}</span><b>{{ n }}</b></div>
+      {% endfor %}
+
+      <h2 style="margin-top:30px">Low stock</h2>
+      {% for p in low %}
+      <div class="row">
+        <a href="/admin/edit/{{ p.id }}">{{ p.name }}</a>
+        <b>{% if p.stock == 0 %}Sold out{% else %}{{ p.stock }} left{% endif %}</b>
+      </div>
+      {% else %}
+      <p><small>Nothing is running low.</small></p>
+      {% endfor %}
+    </div>
+
+    <div>
+      <h2>Best sellers</h2>
+      {% for b in best %}
+      <div style="margin-bottom:14px">
+        <div class="row" style="border:0;padding-bottom:0"><span>{{ b.name }}</span><b>{{ b.sold }} sold</b></div>
+        <div class="bar" style="width: {{ b.sold * 100 // top }}%"></div>
+      </div>
+      {% else %}
+      <p><small>No sales yet.</small></p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
