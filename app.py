@@ -5,6 +5,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.secret_key = "change-this-to-anything"
 
+STATUSES = ["pending", "shipped", "delivered"]
+
 PRODUCTS = [
     ("Ridge Wool Throw", "Hearth & Co", 78, 12, "Heavy merino blanket woven in small batches."),
     ("Halcyon Desk Lamp", "Lumen", 64, 38, "Dimmable brass lamp with a warm, low glow."),
@@ -32,7 +34,7 @@ def setup():
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, email TEXT UNIQUE, password TEXT, is_admin INTEGER DEFAULT 0);
         CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT, brand TEXT, price INTEGER, hue INTEGER, description TEXT, stock INTEGER DEFAULT 10);
-        CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY, user_id INTEGER, total INTEGER, created TEXT DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY, user_id INTEGER, total INTEGER, created TEXT DEFAULT CURRENT_TIMESTAMP, status TEXT DEFAULT 'pending');
         CREATE TABLE IF NOT EXISTS order_items (order_id INTEGER, product_id INTEGER, quantity INTEGER);
     """)
     try:
@@ -41,6 +43,10 @@ def setup():
         pass  # column already exists
     try:
         conn.execute("ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 10")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("ALTER TABLE orders ADD COLUMN status TEXT DEFAULT 'pending'")
     except sqlite3.OperationalError:
         pass
     if conn.execute("SELECT COUNT(*) FROM products").fetchone()[0] == 0:
@@ -249,6 +255,35 @@ def product_form(id=None):
         return redirect("/admin")
     conn.close()
     return render_template("admin_form.html", product=product)
+
+
+@app.route("/admin/orders")
+def admin_orders():
+    if not is_admin():
+        return redirect("/")
+    conn = db()
+    rows = conn.execute("SELECT o.*, u.email FROM orders o JOIN users u ON u.id = o.user_id ORDER BY o.id DESC").fetchall()
+    orders = []
+    for row in rows:
+        items = conn.execute("""SELECT COALESCE(p.name, '(removed item)') AS name, i.quantity FROM order_items i
+                                LEFT JOIN products p ON p.id = i.product_id WHERE i.order_id = ?""", (row["id"],)).fetchall()
+        orders.append({"order": row, "items": items})
+    conn.close()
+    return render_template("admin_orders.html", orders=orders, statuses=STATUSES)
+
+
+@app.route("/admin/orders/<int:id>", methods=["POST"])
+def set_status(id):
+    if not is_admin():
+        return redirect("/")
+    status = request.form["status"]
+    if status in STATUSES:
+        conn = db()
+        conn.execute("UPDATE orders SET status = ? WHERE id = ?", (status, id))
+        conn.commit()
+        conn.close()
+        flash("Order #" + str(id) + " is now " + status + ".")
+    return redirect("/admin/orders")
 
 
 @app.route("/admin/delete/<int:id>", methods=["POST"])
