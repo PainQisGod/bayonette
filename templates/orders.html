@@ -4,7 +4,7 @@
   <h2>My Orders</h2>
   {% for o in orders %}
   <div class="box">
-    <b>Order #{{ o.order.id }}</b> <small>{{ o.order.created }}</small>
+    <b>Order #{{ o.order.id }}</b> <small>{{ o.order.created }}</small> <span class="label">{{ o.order.status }}</span>
     {% for i in o["items"] %}<div>{{ i.quantity }} x {{ i.name }}</div>{% endfor %}
     <b>Total: ${{ o.order.total }}</b>
   </div>
