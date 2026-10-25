@@ -257,6 +257,28 @@ def product_form(id=None):
     return render_template("admin_form.html", product=product)
 
 
+@app.route("/admin/dashboard")
+def dashboard():
+    if not is_admin():
+        return redirect("/")
+    conn = db()
+    revenue, order_count = conn.execute("SELECT COALESCE(SUM(total), 0), COUNT(*) FROM orders").fetchone()
+    customers = conn.execute("SELECT COUNT(*) FROM users WHERE is_admin = 0").fetchone()[0]
+    counts = {status: 0 for status in STATUSES}
+    for row in conn.execute("SELECT status, COUNT(*) AS n FROM orders GROUP BY status").fetchall():
+        if row["status"] in counts:
+            counts[row["status"]] = row["n"]
+    best = conn.execute("""SELECT p.name, SUM(i.quantity) AS sold FROM order_items i
+                           JOIN products p ON p.id = i.product_id
+                           GROUP BY p.id ORDER BY sold DESC LIMIT 5""").fetchall()
+    low = conn.execute("SELECT id, name, stock FROM products WHERE stock <= 3 ORDER BY stock").fetchall()
+    conn.close()
+    average = revenue // order_count if order_count else 0
+    top = best[0]["sold"] if best else 1
+    return render_template("dashboard.html", revenue=revenue, order_count=order_count, customers=customers,
+                           average=average, counts=counts, best=best, low=low, top=top)
+
+
 @app.route("/admin/orders")
 def admin_orders():
     if not is_admin():
