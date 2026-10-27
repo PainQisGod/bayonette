@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <h2>All Orders <a href="/admin">← Products</a></h2>
+  {% for o in orders %}
+  <div class="box">
+    <b>Order #{{ o.order.id }}</b> <small>{{ o.order.email }} · {{ o.order.created }}</small>
+    {% for i in o["items"] %}<div>{{ i.quantity }} x {{ i.name }}</div>{% endfor %}
+    <b>Total: ${{ o.order.total }}</b>
+    <form method="post" action="/admin/orders/{{ o.order.id }}">
+      <select name="status">
+        {% for s in statuses %}
+        <option value="{{ s }}" {% if s == o.order.status %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn">Update</button>
+    </form>
+  </div>
+  {% else %}
+  <p>No orders yet.</p>
+  {% endfor %}
+</section>
+{% endblock %}
