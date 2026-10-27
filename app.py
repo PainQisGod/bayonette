@@ -7,6 +7,13 @@ app.secret_key = "change-this-to-anything"
 
 STATUSES = ["pending", "shipped", "delivered"]
 
+CATEGORIES = {
+    "Ridge Wool Throw": "Home", "Halcyon Desk Lamp": "Home", "Ember Mug Set": "Kitchen",
+    "Fathom Backpack": "Bags", "Drift Speaker": "Tech", "Field Jacket": "Apparel",
+    "Pour-Over Kit": "Kitchen", "Nomad Wallet": "Bags", "Pulse Keyboard": "Tech",
+    "Linen Overshirt": "Apparel", "Orbit Bottle": "Outdoors", "Cobalt Sneaker": "Apparel",
+}
+
 PRODUCTS = [
     ("Ridge Wool Throw", "Hearth & Co", 78, 12, "Heavy merino blanket woven in small batches."),
     ("Halcyon Desk Lamp", "Lumen", 64, 38, "Dimmable brass lamp with a warm, low glow."),
@@ -33,7 +40,7 @@ def setup():
     conn = db()
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, email TEXT UNIQUE, password TEXT, is_admin INTEGER DEFAULT 0);
-        CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT, brand TEXT, price INTEGER, hue INTEGER, description TEXT, stock INTEGER DEFAULT 10);
+        CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT, brand TEXT, price INTEGER, hue INTEGER, description TEXT, stock INTEGER DEFAULT 10, category TEXT DEFAULT 'General');
         CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY, user_id INTEGER, total INTEGER, created TEXT DEFAULT CURRENT_TIMESTAMP, status TEXT DEFAULT 'pending');
         CREATE TABLE IF NOT EXISTS order_items (order_id INTEGER, product_id INTEGER, quantity INTEGER);
     """)
@@ -49,8 +56,14 @@ def setup():
         conn.execute("ALTER TABLE orders ADD COLUMN status TEXT DEFAULT 'pending'")
     except sqlite3.OperationalError:
         pass
+    try:
+        conn.execute("ALTER TABLE products ADD COLUMN category TEXT DEFAULT 'General'")
+    except sqlite3.OperationalError:
+        pass
     if conn.execute("SELECT COUNT(*) FROM products").fetchone()[0] == 0:
         conn.executemany("INSERT INTO products (name, brand, price, hue, description) VALUES (?,?,?,?,?)", PRODUCTS)
+    for name, category in CATEGORIES.items():
+        conn.execute("UPDATE products SET category = ? WHERE name = ? AND category = 'General'", (category, name))
     conn.commit()
     conn.close()
 
@@ -63,10 +76,19 @@ def cart_count():
 @app.route("/")
 def shop():
     q = request.args.get("q", "")
+    category = request.args.get("category", "")
+    sort = request.args.get("sort", "")
+    sql = "SELECT * FROM products WHERE (name LIKE ? OR brand LIKE ?)"
+    params = [f"%{q}%", f"%{q}%"]
+    if category:
+        sql += " AND category = ?"
+        params.append(category)
+    sql += {"low": " ORDER BY price", "high": " ORDER BY price DESC", "name": " ORDER BY name"}.get(sort, " ORDER BY id")
     conn = db()
-    products = conn.execute("SELECT * FROM products WHERE name LIKE ? OR brand LIKE ?", (f"%{q}%", f"%{q}%")).fetchall()
+    products = conn.execute(sql, params).fetchall()
+    categories = [row["category"] for row in conn.execute("SELECT DISTINCT category FROM products ORDER BY category")]
     conn.close()
-    return render_template("shop.html", products=products, q=q)
+    return render_template("shop.html", products=products, q=q, category=category, sort=sort, categories=categories)
 
 
 @app.route("/product/<int:id>")
@@ -244,11 +266,11 @@ def product_form(id=None):
         product = conn.execute("SELECT * FROM products WHERE id = ?", (id,)).fetchone()
     if request.method == "POST":
         data = (request.form["name"], request.form["brand"], int(request.form["price"]),
-                int(request.form["hue"]), request.form["description"], int(request.form["stock"]))
+                int(request.form["hue"]), request.form["description"], int(request.form["stock"]), request.form["category"])
         if id:
-            conn.execute("UPDATE products SET name=?, brand=?, price=?, hue=?, description=?, stock=? WHERE id=?", data + (id,))
+            conn.execute("UPDATE products SET name=?, brand=?, price=?, hue=?, description=?, stock=?, category=? WHERE id=?", data + (id,))
         else:
-            conn.execute("INSERT INTO products (name, brand, price, hue, description, stock) VALUES (?,?,?,?,?,?)", data)
+            conn.execute("INSERT INTO products (name, brand, price, hue, description, stock, category) VALUES (?,?,?,?,?,?,?)", data)
         conn.commit()
         conn.close()
         flash("Saved.")
