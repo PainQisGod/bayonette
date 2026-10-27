@@ -1,6 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
 <section>
+  <form class="filters" method="get" action="/">
+    <input type="hidden" name="q" value="{{ q }}">
+    <select name="category">
+      <option value="">All categories</option>
+      {% for c in categories %}
+      <option value="{{ c }}" {% if c == category %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    <select name="sort">
+      <option value="">Newest first</option>
+      <option value="low" {% if sort == "low" %}selected{% endif %}>Price: low to high</option>
+      <option value="high" {% if sort == "high" %}selected{% endif %}>Price: high to low</option>
+      <option value="name" {% if sort == "name" %}selected{% endif %}>Name A-Z</option>
+    </select>
+    <button class="btn">Filter</button>
+  </form>
   <h2>{% if q %}Results for "{{ q }}"{% else %}All Products{% endif %}</h2>
   <div class="grid4">
     {% for p in products %}
@@ -9,7 +25,7 @@
       <div class="poster" style="background: linear-gradient(155deg, hsl({{ p.hue }},70%,48%), hsl({{ p.hue + 40 }},60%,22%))">{{ p.name }}</div>
       </a>
       <div class="info">
-        <small>{{ p.brand }}</small><br>
+        <small>{{ p.brand }} · {{ p.category }}</small><br>
         <small>{{ p.description }}</small><br><br>
         <form method="post" action="/add/{{ p.id }}">
           {% if p.stock > 0 %}
