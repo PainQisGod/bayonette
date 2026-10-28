@@ -43,6 +43,7 @@ def setup():
         CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT, brand TEXT, price INTEGER, hue INTEGER, description TEXT, stock INTEGER DEFAULT 10, category TEXT DEFAULT 'General');
         CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY, user_id INTEGER, total INTEGER, created TEXT DEFAULT CURRENT_TIMESTAMP, status TEXT DEFAULT 'pending');
         CREATE TABLE IF NOT EXISTS order_items (order_id INTEGER, product_id INTEGER, quantity INTEGER);
+        CREATE TABLE IF NOT EXISTS reviews (id INTEGER PRIMARY KEY, product_id INTEGER, user_id INTEGER, rating INTEGER, comment TEXT, created TEXT DEFAULT CURRENT_TIMESTAMP);
     """)
     try:
         conn.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
@@ -78,12 +79,16 @@ def shop():
     q = request.args.get("q", "")
     category = request.args.get("category", "")
     sort = request.args.get("sort", "")
-    sql = "SELECT * FROM products WHERE (name LIKE ? OR brand LIKE ?)"
+    sql = """SELECT p.*, AVG(r.rating) AS avg_rating, COUNT(r.id) AS review_count
+             FROM products p LEFT JOIN reviews r ON r.product_id = p.id
+             WHERE (p.name LIKE ? OR p.brand LIKE ?)"""
     params = [f"%{q}%", f"%{q}%"]
     if category:
-        sql += " AND category = ?"
+        sql += " AND p.category = ?"
         params.append(category)
-    sql += {"low": " ORDER BY price", "high": " ORDER BY price DESC", "name": " ORDER BY name"}.get(sort, " ORDER BY id")
+    sql += " GROUP BY p.id"
+    sql += {"low": " ORDER BY p.price", "high": " ORDER BY p.price DESC", "name": " ORDER BY p.name",
+            "rating": " ORDER BY avg_rating DESC"}.get(sort, " ORDER BY p.id")
     conn = db()
     products = conn.execute(sql, params).fetchall()
     categories = [row["category"] for row in conn.execute("SELECT DISTINCT category FROM products ORDER BY category")]
@@ -99,8 +104,56 @@ def product(id):
         conn.close()
         return redirect("/")
     more = conn.execute("SELECT * FROM products WHERE brand = ? AND id != ? LIMIT 4", (p["brand"], id)).fetchall()
+    reviews = conn.execute("SELECT r.*, u.email FROM reviews r JOIN users u ON u.id = r.user_id WHERE r.product_id = ? ORDER BY r.id DESC", (id,)).fetchall()
     conn.close()
-    return render_template("product.html", p=p, more=more)
+    average = sum(r["rating"] for r in reviews) / len(reviews) if reviews else 0
+    mine = None
+    for r in reviews:
+        if r["user_id"] == session.get("user_id"):
+            mine = r
+    return render_template("product.html", p=p, more=more, reviews=reviews, average=average, mine=mine)
+
+
+@app.route("/review/<int:id>", methods=["POST"])
+def review(id):
+    if "user_id" not in session:
+        flash("Please log in to write a review.")
+        return redirect("/login")
+    try:
+        rating = int(request.form["rating"])
+    except ValueError:
+        rating = 0
+    comment = request.form["comment"].strip()[:300]
+    if rating < 1 or rating > 5 or comment == "":
+        flash("Please give a rating and a short comment.")
+        return redirect("/product/" + str(id))
+    conn = db()
+    if conn.execute("SELECT id FROM products WHERE id = ?", (id,)).fetchone() is None:
+        conn.close()
+        return redirect("/")
+    conn.execute("DELETE FROM reviews WHERE product_id = ? AND user_id = ?", (id, session["user_id"]))
+    conn.execute("INSERT INTO reviews (product_id, user_id, rating, comment) VALUES (?, ?, ?, ?)",
+                 (id, session["user_id"], rating, comment))
+    conn.commit()
+    conn.close()
+    flash("Thanks for your review!")
+    return redirect("/product/" + str(id))
+
+
+@app.route("/admin/review/<int:id>/delete", methods=["POST"])
+def delete_review(id):
+    if not is_admin():
+        return redirect("/")
+    conn = db()
+    row = conn.execute("SELECT product_id FROM reviews WHERE id = ?", (id,)).fetchone()
+    if row is None:
+        conn.close()
+        return redirect("/")
+    conn.execute("DELETE FROM reviews WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+    flash("Review deleted.")
+    return redirect("/product/" + str(row["product_id"]))
 
 
 @app.route("/add/<int:id>", methods=["POST"])
@@ -336,6 +389,7 @@ def delete_product(id):
         return redirect("/")
     conn = db()
     conn.execute("DELETE FROM products WHERE id = ?", (id,))
+    conn.execute("DELETE FROM reviews WHERE product_id = ?", (id,))
     conn.commit()
     conn.close()
     flash("Product deleted.")
