@@ -14,6 +14,7 @@
       <option value="low" {% if sort == "low" %}selected{% endif %}>Price: low to high</option>
       <option value="high" {% if sort == "high" %}selected{% endif %}>Price: high to low</option>
       <option value="name" {% if sort == "name" %}selected{% endif %}>Name A-Z</option>
+      <option value="rating" {% if sort == "rating" %}selected{% endif %}>Top rated</option>
     </select>
     <button class="btn">Filter</button>
   </form>
@@ -26,6 +27,7 @@
       </a>
       <div class="info">
         <small>{{ p.brand }} · {{ p.category }}</small><br>
+        {% if p.review_count %}<span class="stars">★ {{ "%.1f"|format(p.avg_rating) }}</span> <small>({{ p.review_count }})</small><br>{% endif %}
         <small>{{ p.description }}</small><br><br>
         <form method="post" action="/add/{{ p.id }}">
           {% if p.stock > 0 %}
