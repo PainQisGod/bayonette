@@ -5,6 +5,7 @@
   <div class="heroText">
     <div class="label">{{ p.brand }} · {{ p.category }}</div>
     <h1>{{ p.name }}</h1>
+    {% if reviews %}<div><span class="stars">★ {{ "%.1f"|format(average) }}</span> <small>({{ reviews|length }} review{{ "s" if reviews|length != 1 }})</small></div>{% endif %}
     <p>{{ p.description }}</p>
     <h2 style="border:0">${{ p.price }}</h2>
     <form method="post" action="/add/{{ p.id }}">
@@ -18,6 +19,36 @@
     <a href="/">← Back to shop</a>
   </div>
 </div>
+
+<section>
+  <h2>Reviews</h2>
+  {% if session.user_id %}
+  <form class="filters" method="post" action="/review/{{ p.id }}">
+    <select name="rating">
+      {% for n in [5, 4, 3, 2, 1] %}
+      <option value="{{ n }}" {% if mine and mine.rating == n %}selected{% endif %}>{{ "★" * n }}</option>
+      {% endfor %}
+    </select>
+    <input name="comment" maxlength="300" placeholder="Write a short review" value="{{ mine.comment if mine }}" required>
+    <button class="btn">{% if mine %}Update review{% else %}Post review{% endif %}</button>
+  </form>
+  {% else %}
+  <p><a href="/login">Log in</a> to write a review.</p>
+  {% endif %}
+
+  {% for r in reviews %}
+  <div class="box">
+    <span class="stars">{{ "★" * r.rating }}{{ "☆" * (5 - r.rating) }}</span>
+    <b>{{ r.email.split("@")[0] }}</b> <small>{{ r.created }}</small>
+    {% if session.is_admin %}
+    <form class="inline" method="post" action="/admin/review/{{ r.id }}/delete"><button>x</button></form>
+    {% endif %}
+    <p>{{ r.comment }}</p>
+  </div>
+  {% else %}
+  <p><small>No reviews yet.</small></p>
+  {% endfor %}
+</section>
 
 {% if more %}
 <section>
