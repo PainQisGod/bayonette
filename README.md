@@ -7,6 +7,7 @@ A small Flask shop with accounts, a cart, orders and an admin area. Data is stor
 **Shop**
 - Product list with search, category filter and price sorting
 - Product pages, stock counts and "Sold out" labels
+- Star ratings and written reviews (admins can delete reviews)
 - Cart, checkout and order history with statuses (pending, shipped, delivered)
 - Register and log in
 
