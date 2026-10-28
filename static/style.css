@@ -118,3 +118,5 @@ footer { background: var(--dark); color: var(--light); padding: 30px 0; margin-t
 /* shop filters */
 .filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
 .filters select { padding: 8px; background: var(--card); color: var(--text); border: 1px solid var(--border); }
+
+.filters input[name=comment] { flex: 1; min-width: 200px; padding: 8px; background: var(--card); color: var(--text); border: 1px solid var(--border); }
