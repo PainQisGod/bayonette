@@ -11,7 +11,7 @@ A small Flask shop with accounts, a cart, orders and an admin area. Data is stor
 - Cart, checkout and order history with statuses (pending, shipped, delivered)
 - Register and log in
 
-**Admin** (the first account you register becomes the admin)
+**Admin** (only the configured admin email can access the admin area)
 - Add, edit and delete products
 - Update order statuses
 - Dashboard with total sales, best sellers and low stock
@@ -22,6 +22,9 @@ A small Flask shop with accounts, a cart, orders and an admin area. Data is stor
     python app.py
 
 Then open http://127.0.0.1:5000
+
+The admin email defaults to `admin@bayonette.com`. Set the `ADMIN_EMAIL`
+environment variable before starting the app to use a different address.
 
 ## Files
 

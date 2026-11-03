@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+  <h2>My profile</h2>
+  <form method="post">
+    <label>Email</label>
+    <input type="email" name="email" value="{{ user.email }}" required>
+
+    <label>Current password</label>
+    <input type="password" name="current_password" required>
+
+    <label>New password <small>(leave blank to keep your current password)</small></label>
+    <input type="password" name="new_password" minlength="8">
+
+    <label>Confirm new password</label>
+    <input type="password" name="confirm_password" minlength="8">
+
+    <button class="btn">Save changes</button>
+  </form>
+</div>
+{% endblock %}

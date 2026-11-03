@@ -14,11 +14,12 @@
       <nav>
         <a href="/">Shop</a>
         <a href="/orders">My Orders</a>
-        {% if session.is_admin %}<a href="/admin">Admin</a>{% endif %}
+        {% if admin_access %}<a href="/admin">Admin</a>{% endif %}
       </nav>
       <form action="/"><input name="q" placeholder="Search products" value="{{ q or '' }}"></form>
       {% if session.email %}
-        <a href="/logout">Log out</a>
+          <a href="/profile">Profile</a>
+          <a href="/logout">Log out</a>
       {% else %}
         <a href="/login">Log in</a>
       {% endif %}

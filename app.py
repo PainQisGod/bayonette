@@ -1,9 +1,11 @@
 import sqlite3
+import os
 from flask import Flask, render_template, request, redirect, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = "change-this-to-anything"
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@bayonette.com").strip().lower()
 
 STATUSES = ["pending", "shipped", "delivered"]
 
@@ -49,6 +51,7 @@ def setup():
         conn.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
         pass  # column already exists
+    conn.execute("UPDATE users SET is_admin = CASE WHEN lower(email) = ? THEN 1 ELSE 0 END", (ADMIN_EMAIL,))
     try:
         conn.execute("ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 10")
     except sqlite3.OperationalError:
@@ -71,7 +74,10 @@ def setup():
 
 @app.context_processor
 def cart_count():
-    return {"cart_count": sum(session.get("cart", {}).values())}
+    return {
+        "cart_count": sum(session.get("cart", {}).values()),
+        "admin_access": is_admin(),
+    }
 
 
 @app.route("/")
@@ -248,13 +254,67 @@ def orders():
     return render_template("orders.html", orders=orders)
 
 
+@app.route("/profile", methods=["GET", "POST"])
+def profile():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = db()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+    if user is None:
+        conn.close()
+        session.clear()
+        return redirect("/login")
+
+    if request.method == "POST":
+        email = request.form["email"].strip().lower()
+        current_password = request.form["current_password"]
+        new_password = request.form["new_password"]
+        confirm_password = request.form["confirm_password"]
+
+        if not check_password_hash(user["password"], current_password):
+            conn.close()
+            flash("Your current password is incorrect.")
+            return redirect("/profile")
+        if not email:
+            conn.close()
+            flash("Email is required.")
+            return redirect("/profile")
+        if new_password and new_password != confirm_password:
+            conn.close()
+            flash("New passwords do not match.")
+            return redirect("/profile")
+        if new_password and len(new_password) < 8:
+            conn.close()
+            flash("New password must be at least 8 characters.")
+            return redirect("/profile")
+
+        password = generate_password_hash(new_password) if new_password else user["password"]
+        try:
+            conn.execute("UPDATE users SET email = ?, password = ? WHERE id = ?",
+                         (email, password, session["user_id"]))
+            conn.commit()
+        except sqlite3.IntegrityError:
+            conn.close()
+            flash("That email is already registered.")
+            return redirect("/profile")
+        conn.close()
+        session["email"] = email
+        session["is_admin"] = 1 if email == ADMIN_EMAIL else 0
+        flash("Profile updated.")
+        return redirect("/profile")
+
+    conn.close()
+    return render_template("profile.html", user=user)
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
         email = request.form["email"].lower()
         password = generate_password_hash(request.form["password"])
         conn = db()
-        is_admin = 1 if conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0 else 0
+        is_admin = 1 if email == ADMIN_EMAIL else 0
         try:
             user_id = conn.execute("INSERT INTO users (email, password, is_admin) VALUES (?, ?, ?)", (email, password, is_admin)).lastrowid
             conn.commit()
@@ -295,7 +355,7 @@ def logout():
 
 
 def is_admin():
-    return session.get("is_admin") == 1
+    return session.get("email", "").lower() == ADMIN_EMAIL
 
 
 @app.route("/admin")
