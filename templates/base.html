@@ -6,6 +6,7 @@
   <title>Bayonette</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='pages.css') }}">
 </head>
 <body>
   <header>
@@ -34,6 +35,15 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer><div class="container">© 2026 Bayonette</div></footer>
+  <footer>
+    <div class="container footer-row">
+      <span>© 2026 Bayonette</span>
+      <span class="footer-links">
+        <a href="/about">About</a>
+        <a href="/faq">FAQ</a>
+        <a href="/contact">Contact</a>
+      </span>
+    </div>
+  </footer>
 </body>
 </html>

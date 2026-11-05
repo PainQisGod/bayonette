@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+  <h2>Contact us</h2>
+  <form method="post">
+    <label>Your name</label>
+    <input name="name" required>
+    <label>Email</label>
+    <input type="email" name="email" value="{{ session.email or '' }}" required>
+    <label>Message</label>
+    <textarea name="message" required></textarea>
+    <button class="btn">Send message</button>
+  </form>
+</div>
+{% endblock %}

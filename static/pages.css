@@ -1,0 +1,25 @@
+/* styles for the About, FAQ, Contact, 404 and Messages pages */
+
+.footer-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.footer-links a { margin-left: 18px; opacity: 0.75; }
+.footer-links a:hover { opacity: 1; }
+
+.prose { max-width: 680px; margin: 40px auto; line-height: 1.7; }
+.prose h1 { font-family: "Syne", sans-serif; font-size: 36px; margin-bottom: 6px; }
+.prose p { color: var(--muted); }
+
+.faq details { background: var(--card); border: 1px solid var(--border); padding: 14px 16px; margin-bottom: 10px; }
+.faq summary { font-weight: 800; cursor: pointer; }
+.faq details p { margin: 10px 0 0; }
+
+.notfound { text-align: center; padding: 80px 0; }
+.notfound .big { font-family: "Syne", sans-serif; font-size: 120px; font-weight: 800; color: var(--accent); line-height: 1; }
+
+.values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 30px 0; }
+.values div { background: var(--card); border: 1px solid var(--border); padding: 16px; }
+.values b { display: block; margin-bottom: 4px; }
+.values small { display: block; }
+
+textarea { width: 100%; min-height: 120px; padding: 10px; margin: 6px 0 14px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: inherit; }
+
+@media (max-width: 860px) { .values { grid-template-columns: 1fr; } }

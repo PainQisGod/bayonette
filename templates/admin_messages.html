@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <h2>Messages <a href="/admin">← Products</a></h2>
+  {% for m in messages %}
+  <div class="box">
+    <b>{{ m.name }}</b> <small>{{ m.email }} · {{ m.created }}</small>
+    <p>{{ m.message }}</p>
+  </div>
+  {% else %}
+  <p><small>No messages yet.</small></p>
+  {% endfor %}
+</section>
+{% endblock %}

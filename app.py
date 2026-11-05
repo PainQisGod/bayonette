@@ -46,6 +46,7 @@ def setup():
         CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY, user_id INTEGER, total INTEGER, created TEXT DEFAULT CURRENT_TIMESTAMP, status TEXT DEFAULT 'pending');
         CREATE TABLE IF NOT EXISTS order_items (order_id INTEGER, product_id INTEGER, quantity INTEGER);
         CREATE TABLE IF NOT EXISTS reviews (id INTEGER PRIMARY KEY, product_id INTEGER, user_id INTEGER, rating INTEGER, comment TEXT, created TEXT DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, name TEXT, email TEXT, message TEXT, created TEXT DEFAULT CURRENT_TIMESTAMP);
     """)
     try:
         conn.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
@@ -237,6 +238,49 @@ def checkout():
     session["cart"] = {}
     flash("Order placed. Thank you!")
     return redirect("/orders")
+
+
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+
+@app.route("/faq")
+def faq():
+    return render_template("faq.html")
+
+
+@app.route("/contact", methods=["GET", "POST"])
+def contact():
+    if request.method == "POST":
+        name = request.form["name"].strip()
+        email = request.form["email"].strip()
+        message = request.form["message"].strip()
+        if not name or not email or not message:
+            flash("Please fill in every field.")
+            return redirect("/contact")
+        conn = db()
+        conn.execute("INSERT INTO messages (name, email, message) VALUES (?, ?, ?)", (name, email, message))
+        conn.commit()
+        conn.close()
+        flash("Thanks! We got your message.")
+        return redirect("/contact")
+    return render_template("contact.html")
+
+
+@app.route("/admin/messages")
+def admin_messages():
+    if not is_admin():
+        return redirect("/")
+    conn = db()
+    messages = conn.execute("SELECT * FROM messages ORDER BY id DESC").fetchall()
+    conn.close()
+    return render_template("admin_messages.html", messages=messages)
+
+
+@app.errorhandler(404)
+def not_found(error):
+    return render_template("404.html"), 404
 
 
 @app.route("/orders")
