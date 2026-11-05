@@ -23,3 +23,18 @@
 textarea { width: 100%; min-height: 120px; padding: 10px; margin: 6px 0 14px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: inherit; }
 
 @media (max-width: 860px) { .values { grid-template-columns: 1fr; } }
+
+/* theme button and pop-up message (used by js/main.js) */
+.theme-btn { background: none; border: 1px solid #ffffff55; color: inherit; padding: 6px 12px; cursor: pointer; }
+.theme-btn:hover { border-color: var(--accent); }
+
+#toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translate(-50%, 20px);
+  background: var(--text); color: var(--bg);
+  padding: 12px 20px; font-weight: 600;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 50;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }

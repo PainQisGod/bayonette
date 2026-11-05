@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='pages.css') }}">
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </head>
 <body>
   <header>
@@ -24,7 +25,8 @@
       {% else %}
         <a href="/login">Log in</a>
       {% endif %}
-      <a class="btn" href="/cart">Cart ({{ cart_count }})</a>
+      <button class="theme-btn" id="theme-toggle" type="button">Dark</button>
+      <a class="btn" href="/cart">Cart (<span id="cart-count">{{ cart_count }}</span>)</a>
     </div>
   </header>
 
@@ -45,5 +47,6 @@
       </span>
     </div>
   </footer>
+  <div id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

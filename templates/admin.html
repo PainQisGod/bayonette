@@ -7,7 +7,7 @@
     <span><b>{{ p.name }}</b> <small>{{ p.brand }} · {{ p.category }} · ${{ p.price }} · {{ p.stock }} in stock</small></span>
     <span>
       <a href="/admin/edit/{{ p.id }}">Edit</a>
-      <form class="inline" method="post" action="/admin/delete/{{ p.id }}" onsubmit="return confirm('Delete this product?')">
+      <form class="inline" method="post" action="/admin/delete/{{ p.id }}" data-confirm="Delete this product?">
         <button>x</button>
       </form>
     </span>

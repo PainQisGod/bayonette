@@ -41,7 +41,7 @@
     <span class="stars">{{ "★" * r.rating }}{{ "☆" * (5 - r.rating) }}</span>
     <b>{{ r.email.split("@")[0] }}</b> <small>{{ r.created }}</small>
     {% if session.is_admin %}
-    <form class="inline" method="post" action="/admin/review/{{ r.id }}/delete"><button>x</button></form>
+    <form class="inline" method="post" action="/admin/review/{{ r.id }}/delete" data-confirm="Delete this review?"><button>x</button></form>
     {% endif %}
     <p>{{ r.comment }}</p>
   </div>
