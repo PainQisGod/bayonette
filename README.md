@@ -30,7 +30,9 @@ environment variable before starting the app to use a different address.
 
 - `app.py` - routes and database code
 - `templates/` - the pages
-- `static/style.css` - the styling
+- `static/css/` - the styling: `base.css` (every page), `shop.css`, `pages.css`, `admin.css`
+- `static/js/main.js` - dark mode button, cart pop-up and confirm checks
+- `static/img/` - logo and favicon
 - `shop.db` - created on first run (delete it to reset everything)
 
 ## Edit it

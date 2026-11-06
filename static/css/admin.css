@@ -1,0 +1,8 @@
+/* admin dashboard */
+
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 30px; }
+.stat { background: var(--card); border: 1px solid var(--border); padding: 16px; }
+.stat b { display: block; font-family: "Syne", sans-serif; font-size: 28px; }
+.bar { background: var(--accent); height: 10px; margin-top: 4px; }
+
+@media (max-width: 860px) { .stats { grid-template-columns: repeat(2, 1fr); } }
