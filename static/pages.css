@@ -38,3 +38,17 @@ textarea { width: 100%; min-height: 120px; padding: 10px; margin: 6px 0 14px; bo
   z-index: 50;
 }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* checkout and order confirmation */
+.checkout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 30px; align-items: start; }
+.checkout-form input:not([type="radio"]) { width: 100%; padding: 10px; margin: 6px 0 14px; border: 1px solid var(--border); background: var(--card); color: var(--text); }
+.checkout-form label { font-weight: 600; }
+.choice { display: flex; gap: 8px; align-items: center; font-weight: 400 !important; margin: 8px 0; cursor: pointer; }
+.checkout-form .btn { margin-top: 14px; }
+.summary { position: sticky; top: 80px; }
+
+.confirm { text-align: center; }
+.confirm .box { text-align: left; margin-top: 16px; }
+.check { width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 50%; background: var(--accent); color: white; font-size: 34px; line-height: 64px; }
+
+@media (max-width: 860px) { .checkout { grid-template-columns: 1fr; } .summary { position: static; } }

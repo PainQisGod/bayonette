@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="prose confirm">
+  <div class="check">✓</div>
+  <div class="label">Order #{{ order.id }} · {{ order.status }}</div>
+  <h1>Thanks{% if order.name %}, {{ order.name.split(' ')[0] }}{% endif %}!</h1>
+  <p>Your order is in. You can follow its status on your <a href="/orders">My Orders</a> page.</p>
+
+  <div class="box">
+    {% for i in items %}
+    <div class="row">
+      <span>{{ i.quantity }} x {{ i.name }}</span>
+      <span>{% if i.price %}${{ i.price * i.quantity }}{% endif %}</span>
+    </div>
+    {% endfor %}
+    <div class="total">Total: ${{ order.total }}</div>
+  </div>
+
+  {% if order.address %}
+  <div class="box">
+    <b>Delivering to</b><br>
+    {{ order.name }} · {{ order.phone }}<br>
+    {{ order.address }}<br>
+    <small>{{ order.payment }}</small>
+  </div>
+  {% endif %}
+
+  <a class="btn" href="/">Keep shopping</a>
+</div>
+{% endblock %}

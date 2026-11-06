@@ -16,7 +16,7 @@
   {% endfor %}
   <div class="total">Total: ${{ total }}</div>
   {% if items %}
-  <form method="post" action="/checkout"><button class="btn">Checkout</button></form>
+  <a class="btn" href="/checkout">Checkout</a>
   {% endif %}
 </section>
 {% endblock %}

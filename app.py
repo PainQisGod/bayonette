@@ -61,6 +61,11 @@ def setup():
         conn.execute("ALTER TABLE orders ADD COLUMN status TEXT DEFAULT 'pending'")
     except sqlite3.OperationalError:
         pass
+    for column in ["name", "phone", "address", "payment"]:
+        try:
+            conn.execute("ALTER TABLE orders ADD COLUMN " + column + " TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
     try:
         conn.execute("ALTER TABLE products ADD COLUMN category TEXT DEFAULT 'General'")
     except sqlite3.OperationalError:
@@ -216,7 +221,10 @@ def cart():
     return render_template("cart.html", items=items, total=total)
 
 
-@app.route("/checkout", methods=["POST"])
+PAYMENTS = ["Cash on delivery", "Pay at pickup"]
+
+
+@app.route("/checkout", methods=["GET", "POST"])
 def checkout():
     if "user_id" not in session:
         flash("Please log in to check out.")
@@ -228,16 +236,39 @@ def checkout():
         if item["quantity"] > item["product"]["stock"]:
             flash("Not enough stock for " + item["product"]["name"] + ".")
             return redirect("/cart")
+    if request.method == "GET":
+        return render_template("checkout.html", items=items, total=total, payments=PAYMENTS, form={})
+
+    form = {key: request.form.get(key, "").strip() for key in ["name", "phone", "address", "payment"]}
+    if not form["name"] or not form["phone"] or not form["address"] or form["payment"] not in PAYMENTS:
+        flash("Please fill in every field.")
+        return render_template("checkout.html", items=items, total=total, payments=PAYMENTS, form=form)
+
     conn = db()
-    order_id = conn.execute("INSERT INTO orders (user_id, total) VALUES (?, ?)", (session["user_id"], total)).lastrowid
+    order_id = conn.execute("INSERT INTO orders (user_id, total, name, phone, address, payment) VALUES (?, ?, ?, ?, ?, ?)",
+                            (session["user_id"], total, form["name"], form["phone"], form["address"], form["payment"])).lastrowid
     for item in items:
         conn.execute("INSERT INTO order_items VALUES (?, ?, ?)", (order_id, item["product"]["id"], item["quantity"]))
         conn.execute("UPDATE products SET stock = stock - ? WHERE id = ?", (item["quantity"], item["product"]["id"]))
     conn.commit()
     conn.close()
     session["cart"] = {}
-    flash("Order placed. Thank you!")
-    return redirect("/orders")
+    return redirect("/order/" + str(order_id))
+
+
+@app.route("/order/<int:id>")
+def order_confirmation(id):
+    if "user_id" not in session:
+        return redirect("/login")
+    conn = db()
+    order = conn.execute("SELECT * FROM orders WHERE id = ?", (id,)).fetchone()
+    if order is None or (order["user_id"] != session["user_id"] and not is_admin()):
+        conn.close()
+        return redirect("/orders")
+    items = conn.execute("""SELECT COALESCE(p.name, '(removed item)') AS name, i.quantity, p.price, p.hue FROM order_items i
+                            LEFT JOIN products p ON p.id = i.product_id WHERE i.order_id = ?""", (id,)).fetchall()
+    conn.close()
+    return render_template("confirmation.html", order=order, items=items)
 
 
 @app.route("/about")
