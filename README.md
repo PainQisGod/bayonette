@@ -10,6 +10,7 @@ A small Flask shop with accounts, a cart, orders and an admin area. Data is stor
 - Star ratings and written reviews (admins can delete reviews)
 - Cart, checkout and order history with statuses (pending, shipped, delivered)
 - Register and log in
+- Wishlist: save products with the heart button
 
 **Admin** (only the configured admin email can access the admin area)
 - Add, edit and delete products
@@ -37,4 +38,4 @@ environment variable before starting the app to use a different address.
 
 ## Edit it
 
-Change the `PRODUCTS` and `CATEGORIES` lists at the top of `app.py`, then delete `shop.db` and run again. Or just use the admin page.
+Change the `PRODUCTS` and `CATEGORIES` lists at the top of `app.py`, then delete `shop.db` and run again. Or just use the admin page.

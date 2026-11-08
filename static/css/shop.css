@@ -26,3 +26,8 @@
   .hero { grid-template-columns: 1fr; }
   .grid4 { grid-template-columns: repeat(2, 1fr); }
 }
+/* wishlist heart */
+.wish-form { float: right; }
+.wish { background: none; border: none; font-size: 22px; line-height: 1; cursor: pointer; color: var(--muted); padding: 0 2px; }
+.wish:hover, .wish.on { color: var(--accent); }
+.wish-actions { display: flex; gap: 8px; flex-wrap: wrap; }

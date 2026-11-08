@@ -26,6 +26,9 @@
       <div class="poster" style="background: linear-gradient(155deg, hsl({{ p.hue }},70%,48%), hsl({{ p.hue + 40 }},60%,22%))">{{ p.name }}</div>
       </a>
       <div class="info">
+        <form class="inline wish-form" method="post" action="/wishlist/{{ p.id }}">
+          <button class="wish {% if p.id in wished %}on{% endif %}" type="submit" aria-label="Save to wishlist">{% if p.id in wished %}♥{% else %}♡{% endif %}</button>
+        </form>
         <small>{{ p.brand }} · {{ p.category }}</small><br>
         {% if p.review_count %}<span class="stars">★ {{ "%.1f"|format(p.avg_rating) }}</span> <small>({{ p.review_count }})</small><br>{% endif %}
         <small>{{ p.description }}</small><br><br>

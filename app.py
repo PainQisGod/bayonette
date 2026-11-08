@@ -46,6 +46,7 @@ def setup():
         CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY, user_id INTEGER, total INTEGER, created TEXT DEFAULT CURRENT_TIMESTAMP, status TEXT DEFAULT 'pending');
         CREATE TABLE IF NOT EXISTS order_items (order_id INTEGER, product_id INTEGER, quantity INTEGER);
         CREATE TABLE IF NOT EXISTS reviews (id INTEGER PRIMARY KEY, product_id INTEGER, user_id INTEGER, rating INTEGER, comment TEXT, created TEXT DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS wishlist (user_id INTEGER, product_id INTEGER, PRIMARY KEY (user_id, product_id));
         CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, name TEXT, email TEXT, message TEXT, created TEXT DEFAULT CURRENT_TIMESTAMP);
     """)
     try:
@@ -80,9 +81,15 @@ def setup():
 
 @app.context_processor
 def cart_count():
+    wished = set()
+    if "user_id" in session:
+        conn = db()
+        wished = {row["product_id"] for row in conn.execute("SELECT product_id FROM wishlist WHERE user_id = ?", (session["user_id"],))}
+        conn.close()
     return {
         "cart_count": sum(session.get("cart", {}).values()),
         "admin_access": is_admin(),
+        "wished": wished,
     }
 
 
@@ -314,6 +321,38 @@ def not_found(error):
     return render_template("404.html"), 404
 
 
+@app.route("/wishlist/<int:id>", methods=["POST"])
+def toggle_wishlist(id):
+    if "user_id" not in session:
+        flash("Please log in to save items.")
+        return redirect("/login")
+    conn = db()
+    if conn.execute("SELECT id FROM products WHERE id = ?", (id,)).fetchone() is None:
+        conn.close()
+        return redirect("/")
+    saved = conn.execute("SELECT 1 FROM wishlist WHERE user_id = ? AND product_id = ?", (session["user_id"], id)).fetchone()
+    if saved:
+        conn.execute("DELETE FROM wishlist WHERE user_id = ? AND product_id = ?", (session["user_id"], id))
+        flash("Removed from your wishlist.")
+    else:
+        conn.execute("INSERT INTO wishlist (user_id, product_id) VALUES (?, ?)", (session["user_id"], id))
+        flash("Saved to your wishlist.")
+    conn.commit()
+    conn.close()
+    return redirect(request.referrer or "/wishlist")
+
+
+@app.route("/wishlist")
+def wishlist():
+    if "user_id" not in session:
+        return redirect("/login")
+    conn = db()
+    products = conn.execute("""SELECT p.* FROM wishlist w JOIN products p ON p.id = w.product_id
+                               WHERE w.user_id = ? ORDER BY p.name""", (session["user_id"],)).fetchall()
+    conn.close()
+    return render_template("wishlist.html", products=products)
+
+
 @app.route("/orders")
 def orders():
     if "user_id" not in session:
@@ -525,6 +564,7 @@ def delete_product(id):
     conn = db()
     conn.execute("DELETE FROM products WHERE id = ?", (id,))
     conn.execute("DELETE FROM reviews WHERE product_id = ?", (id,))
+    conn.execute("DELETE FROM wishlist WHERE product_id = ?", (id,))
     conn.commit()
     conn.close()
     flash("Product deleted.")
@@ -534,4 +574,4 @@ def delete_product(id):
 setup()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True)

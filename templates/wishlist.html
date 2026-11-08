@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <h2>My Wishlist <small>{{ products|length }} saved</small></h2>
+  <div class="grid4">
+    {% for p in products %}
+    <div class="product">
+      <a href="/product/{{ p.id }}">
+        <div class="poster" style="background: linear-gradient(155deg, hsl({{ p.hue }},70%,48%), hsl({{ p.hue + 40 }},60%,22%))">{{ p.name }}</div>
+      </a>
+      <div class="info">
+        <small>{{ p.brand }} · ${{ p.price }}</small><br><br>
+        <div class="wish-actions">
+        {% if p.stock > 0 %}
+        <form method="post" action="/add/{{ p.id }}"><button class="btn">Add to cart</button></form>
+        {% else %}
+        <button class="btn outline" disabled>Sold out</button>
+        {% endif %}
+        <form method="post" action="/wishlist/{{ p.id }}" data-reload="true">
+          <button class="btn outline" type="submit">Remove</button>
+        </form>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <p>Nothing saved yet. Tap the ♡ on any product to keep it here. <a class="link" href="/">Browse the shop</a></p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

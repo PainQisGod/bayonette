@@ -52,6 +52,34 @@ function addToCart(form) {
     .catch(function () { form.submit(); });   // if anything goes wrong, do it the old way
 }
 
+// ---------- Wishlist heart without reloading the page ----------
+function toggleWish(form) {
+  fetch(form.getAttribute("action"), { method: "POST" })
+    .then(function (response) {
+      // not logged in: the server sends us to the login page
+      if (response.url.indexOf("/login") !== -1) {
+        window.location = "/login";
+        return null;
+      }
+      return response.text();
+    })
+    .then(function (html) {
+      if (html === null) return;
+      var page = new DOMParser().parseFromString(html, "text/html");
+      var message = page.querySelector(".flash");
+      var saved = message && message.textContent.indexOf("Saved") !== -1;
+      var button = form.querySelector(".wish");
+      if (button) {
+        button.classList.toggle("on", saved);
+        button.textContent = saved ? "♥" : "♡";
+      }
+      var count = document.getElementById("wish-count");
+      if (count) count.textContent = Number(count.textContent) + (saved ? 1 : -1);
+      showToast(message ? message.textContent.trim() : "Updated");
+    })
+    .catch(function () { form.submit(); });
+}
+
 // ---------- Forms ----------
 document.addEventListener("submit", function (event) {
   var form = event.target;
@@ -67,10 +95,16 @@ document.addEventListener("submit", function (event) {
     event.preventDefault();
     addToCart(form);
   }
+
+  // the Remove button on the wishlist page reloads normally (data-reload)
+  if (action.indexOf("/wishlist/") === 0 && !form.dataset.reload) {
+    event.preventDefault();
+    toggleWish(form);
+  }
 });
 
 document.addEventListener("DOMContentLoaded", function () {
   var button = document.getElementById("theme-toggle");
   if (button) button.addEventListener("click", toggleTheme);
   updateThemeButton();
-});
+});

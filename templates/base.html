@@ -19,6 +19,7 @@
       <nav>
         <a href="/">Shop</a>
         <a href="/orders">My Orders</a>
+        {% if session.user_id %}<a href="/wishlist">Wishlist (<span id="wish-count">{{ wished|length }}</span>)</a>{% endif %}
         {% if admin_access %}<a href="/admin">Admin</a>{% endif %}
       </nav>
       <form action="/"><input name="q" placeholder="Search products" value="{{ q or '' }}"></form>
@@ -52,4 +53,4 @@
   </footer>
   <div id="toast" role="status" aria-live="polite"></div>
 </body>
-</html>
+</html>
