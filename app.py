@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import math
 from flask import Flask, render_template, request, redirect, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -8,6 +9,7 @@ app.secret_key = "change-this-to-anything"
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@bayonette.com").strip().lower()
 
 STATUSES = ["pending", "shipped", "delivered"]
+PER_PAGE = 8
 
 CATEGORIES = {
     "Ridge Wool Throw": "Home", "Halcyon Desk Lamp": "Home", "Ember Mug Set": "Kitchen",
@@ -47,6 +49,7 @@ def setup():
         CREATE TABLE IF NOT EXISTS order_items (order_id INTEGER, product_id INTEGER, quantity INTEGER);
         CREATE TABLE IF NOT EXISTS reviews (id INTEGER PRIMARY KEY, product_id INTEGER, user_id INTEGER, rating INTEGER, comment TEXT, created TEXT DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS wishlist (user_id INTEGER, product_id INTEGER, PRIMARY KEY (user_id, product_id));
+        CREATE TABLE IF NOT EXISTS coupons (id INTEGER PRIMARY KEY, code TEXT UNIQUE, percent INTEGER, active INTEGER DEFAULT 1);
         CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, name TEXT, email TEXT, message TEXT, created TEXT DEFAULT CURRENT_TIMESTAMP);
     """)
     try:
@@ -62,11 +65,15 @@ def setup():
         conn.execute("ALTER TABLE orders ADD COLUMN status TEXT DEFAULT 'pending'")
     except sqlite3.OperationalError:
         pass
-    for column in ["name", "phone", "address", "payment"]:
+    for column in ["name", "phone", "address", "payment", "coupon"]:
         try:
             conn.execute("ALTER TABLE orders ADD COLUMN " + column + " TEXT DEFAULT ''")
         except sqlite3.OperationalError:
             pass
+    try:
+        conn.execute("ALTER TABLE orders ADD COLUMN discount INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
     try:
         conn.execute("ALTER TABLE products ADD COLUMN category TEXT DEFAULT 'General'")
     except sqlite3.OperationalError:
@@ -93,6 +100,19 @@ def cart_count():
     }
 
 
+def recent_products(exclude=None):
+    conn = db()
+    items = []
+    for id in session.get("recent", []):
+        if id == exclude:
+            continue
+        row = conn.execute("SELECT * FROM products WHERE id = ?", (id,)).fetchone()
+        if row:
+            items.append(row)
+    conn.close()
+    return items[:4]
+
+
 @app.route("/")
 def shop():
     q = request.args.get("q", "")
@@ -109,10 +129,15 @@ def shop():
     sql += {"low": " ORDER BY p.price", "high": " ORDER BY p.price DESC", "name": " ORDER BY p.name",
             "rating": " ORDER BY avg_rating DESC"}.get(sort, " ORDER BY p.id")
     conn = db()
-    products = conn.execute(sql, params).fetchall()
+    all_products = conn.execute(sql, params).fetchall()
     categories = [row["category"] for row in conn.execute("SELECT DISTINCT category FROM products ORDER BY category")]
     conn.close()
-    return render_template("shop.html", products=products, q=q, category=category, sort=sort, categories=categories)
+    pages = max(1, math.ceil(len(all_products) / PER_PAGE))
+    page = min(max(request.args.get("page", 1, type=int), 1), pages)
+    products = all_products[(page - 1) * PER_PAGE: page * PER_PAGE]
+    recent = recent_products() if page == 1 and not q and not category else []
+    return render_template("shop.html", products=products, q=q, category=category, sort=sort, categories=categories,
+                           page=page, pages=pages, recent=recent)
 
 
 @app.route("/product/<int:id>")
@@ -123,6 +148,7 @@ def product(id):
         conn.close()
         return redirect("/")
     more = conn.execute("SELECT * FROM products WHERE brand = ? AND id != ? LIMIT 4", (p["brand"], id)).fetchall()
+    related = conn.execute("SELECT * FROM products WHERE category = ? AND id != ? LIMIT 4", (p["category"], id)).fetchall()
     reviews = conn.execute("SELECT r.*, u.email FROM reviews r JOIN users u ON u.id = r.user_id WHERE r.product_id = ? ORDER BY r.id DESC", (id,)).fetchall()
     conn.close()
     average = sum(r["rating"] for r in reviews) / len(reviews) if reviews else 0
@@ -130,7 +156,11 @@ def product(id):
     for r in reviews:
         if r["user_id"] == session.get("user_id"):
             mine = r
-    return render_template("product.html", p=p, more=more, reviews=reviews, average=average, mine=mine)
+    recent = recent_products(exclude=id)
+    viewed = [i for i in session.get("recent", []) if i != id]
+    session["recent"] = [id] + viewed[:9]
+    return render_template("product.html", p=p, more=more, related=related, recent=recent,
+                           reviews=reviews, average=average, mine=mine)
 
 
 @app.route("/review/<int:id>", methods=["POST"])
@@ -222,10 +252,44 @@ def cart_items():
     return items, total
 
 
+def coupon_discount(total):
+    code = session.get("coupon")
+    if not code:
+        return "", 0
+    conn = db()
+    row = conn.execute("SELECT * FROM coupons WHERE code = ? AND active = 1", (code,)).fetchone()
+    conn.close()
+    if row is None:
+        session.pop("coupon", None)
+        return "", 0
+    return code, total * row["percent"] // 100
+
+
 @app.route("/cart")
 def cart():
     items, total = cart_items()
-    return render_template("cart.html", items=items, total=total)
+    code, discount = coupon_discount(total)
+    return render_template("cart.html", items=items, total=total, code=code, discount=discount)
+
+
+@app.route("/coupon", methods=["POST"])
+def apply_coupon():
+    code = request.form.get("code", "").strip().upper()
+    conn = db()
+    row = conn.execute("SELECT * FROM coupons WHERE code = ? AND active = 1", (code,)).fetchone()
+    conn.close()
+    if row:
+        session["coupon"] = code
+        flash("Coupon " + code + " applied: " + str(row["percent"]) + "% off.")
+    else:
+        flash("That coupon code is not valid.")
+    return redirect(request.referrer or "/cart")
+
+
+@app.route("/coupon/remove", methods=["POST"])
+def remove_coupon():
+    session.pop("coupon", None)
+    return redirect(request.referrer or "/cart")
 
 
 PAYMENTS = ["Cash on delivery", "Pay at pickup"]
@@ -239,27 +303,29 @@ def checkout():
     items, total = cart_items()
     if not items:
         return redirect("/cart")
+    code, discount = coupon_discount(total)
     for item in items:
         if item["quantity"] > item["product"]["stock"]:
             flash("Not enough stock for " + item["product"]["name"] + ".")
             return redirect("/cart")
     if request.method == "GET":
-        return render_template("checkout.html", items=items, total=total, payments=PAYMENTS, form={})
+        return render_template("checkout.html", items=items, total=total, code=code, discount=discount, payments=PAYMENTS, form={})
 
     form = {key: request.form.get(key, "").strip() for key in ["name", "phone", "address", "payment"]}
     if not form["name"] or not form["phone"] or not form["address"] or form["payment"] not in PAYMENTS:
         flash("Please fill in every field.")
-        return render_template("checkout.html", items=items, total=total, payments=PAYMENTS, form=form)
+        return render_template("checkout.html", items=items, total=total, code=code, discount=discount, payments=PAYMENTS, form=form)
 
     conn = db()
-    order_id = conn.execute("INSERT INTO orders (user_id, total, name, phone, address, payment) VALUES (?, ?, ?, ?, ?, ?)",
-                            (session["user_id"], total, form["name"], form["phone"], form["address"], form["payment"])).lastrowid
+    order_id = conn.execute("INSERT INTO orders (user_id, total, name, phone, address, payment, coupon, discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                            (session["user_id"], total - discount, form["name"], form["phone"], form["address"], form["payment"], code, discount)).lastrowid
     for item in items:
         conn.execute("INSERT INTO order_items VALUES (?, ?, ?)", (order_id, item["product"]["id"], item["quantity"]))
         conn.execute("UPDATE products SET stock = stock - ? WHERE id = ?", (item["quantity"], item["product"]["id"]))
     conn.commit()
     conn.close()
     session["cart"] = {}
+    session.pop("coupon", None)
     return redirect("/order/" + str(order_id))
 
 
@@ -276,6 +342,28 @@ def order_confirmation(id):
                             LEFT JOIN products p ON p.id = i.product_id WHERE i.order_id = ?""", (id,)).fetchall()
     conn.close()
     return render_template("confirmation.html", order=order, items=items)
+
+
+@app.route("/order/<int:id>/cancel", methods=["POST"])
+def cancel_order(id):
+    if "user_id" not in session:
+        return redirect("/login")
+    conn = db()
+    order = conn.execute("SELECT * FROM orders WHERE id = ?", (id,)).fetchone()
+    if order is None or (order["user_id"] != session["user_id"] and not is_admin()):
+        conn.close()
+        return redirect("/orders")
+    if order["status"] != "pending":
+        conn.close()
+        flash("Only pending orders can be cancelled.")
+        return redirect("/orders")
+    for item in conn.execute("SELECT * FROM order_items WHERE order_id = ?", (id,)).fetchall():
+        conn.execute("UPDATE products SET stock = stock + ? WHERE id = ?", (item["quantity"], item["product_id"]))
+    conn.execute("UPDATE orders SET status = 'cancelled' WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+    flash("Order #" + str(id) + " was cancelled.")
+    return redirect("/admin/orders" if is_admin() and request.form.get("from") == "admin" else "/orders")
 
 
 @app.route("/about")
@@ -511,7 +599,7 @@ def dashboard():
     if not is_admin():
         return redirect("/")
     conn = db()
-    revenue, order_count = conn.execute("SELECT COALESCE(SUM(total), 0), COUNT(*) FROM orders").fetchone()
+    revenue, order_count = conn.execute("SELECT COALESCE(SUM(total), 0), COUNT(*) FROM orders WHERE status != 'cancelled'").fetchone()
     customers = conn.execute("SELECT COUNT(*) FROM users WHERE is_admin = 0").fetchone()[0]
     counts = {status: 0 for status in STATUSES}
     for row in conn.execute("SELECT status, COUNT(*) AS n FROM orders GROUP BY status").fetchall():
@@ -519,6 +607,8 @@ def dashboard():
             counts[row["status"]] = row["n"]
     best = conn.execute("""SELECT p.name, SUM(i.quantity) AS sold FROM order_items i
                            JOIN products p ON p.id = i.product_id
+                           JOIN orders o ON o.id = i.order_id
+                           WHERE o.status != 'cancelled'
                            GROUP BY p.id ORDER BY sold DESC LIMIT 5""").fetchall()
     low = conn.execute("SELECT id, name, stock FROM products WHERE stock <= 3 ORDER BY stock").fetchall()
     conn.close()
@@ -548,6 +638,12 @@ def set_status(id):
     if not is_admin():
         return redirect("/")
     status = request.form["status"]
+    conn = db()
+    current = conn.execute("SELECT status FROM orders WHERE id = ?", (id,)).fetchone()
+    conn.close()
+    if current and current["status"] == "cancelled":
+        flash("Cancelled orders can't be changed.")
+        return redirect("/admin/orders")
     if status in STATUSES:
         conn = db()
         conn.execute("UPDATE orders SET status = ? WHERE id = ?", (status, id))
@@ -555,6 +651,50 @@ def set_status(id):
         conn.close()
         flash("Order #" + str(id) + " is now " + status + ".")
     return redirect("/admin/orders")
+
+
+@app.route("/admin/coupons", methods=["GET", "POST"])
+def admin_coupons():
+    if not is_admin():
+        return redirect("/")
+    conn = db()
+    if request.method == "POST":
+        code = request.form.get("code", "").strip().upper()
+        percent = request.form.get("percent", 0, type=int)
+        if not code or not 1 <= percent <= 90:
+            flash("Enter a code and a percent between 1 and 90.")
+        else:
+            try:
+                conn.execute("INSERT INTO coupons (code, percent) VALUES (?, ?)", (code, percent))
+                conn.commit()
+                flash("Coupon " + code + " created.")
+            except sqlite3.IntegrityError:
+                flash("That code already exists.")
+    coupons = conn.execute("SELECT * FROM coupons ORDER BY id DESC").fetchall()
+    conn.close()
+    return render_template("admin_coupons.html", coupons=coupons)
+
+
+@app.route("/admin/coupons/<int:id>/toggle", methods=["POST"])
+def toggle_coupon(id):
+    if not is_admin():
+        return redirect("/")
+    conn = db()
+    conn.execute("UPDATE coupons SET active = 1 - active WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+    return redirect("/admin/coupons")
+
+
+@app.route("/admin/coupons/<int:id>/delete", methods=["POST"])
+def delete_coupon(id):
+    if not is_admin():
+        return redirect("/")
+    conn = db()
+    conn.execute("DELETE FROM coupons WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+    return redirect("/admin/coupons")
 
 
 @app.route("/admin/delete/<int:id>", methods=["POST"])
@@ -574,4 +714,4 @@ def delete_product(id):
 setup()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True)
