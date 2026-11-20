@@ -6,7 +6,10 @@
   <div class="box">
     <a href="/order/{{ o.order.id }}"><b>Order #{{ o.order.id }}</b></a> <small>{{ o.order.created }}</small> <span class="label">{{ o.order.status }}</span>
     {% for i in o["items"] %}<div>{{ i.quantity }} x {{ i.name }}</div>{% endfor %}
-    <b>Total: ${{ o.order.total }}</b>
+    <b>Total: ${{ o.order.total }}</b>{% if o.order.discount %} <small>(coupon {{ o.order.coupon }}: -${{ o.order.discount }})</small>{% endif %}
+    {% if o.order.status == "pending" %}
+    <form class="inline" method="post" action="/order/{{ o.order.id }}/cancel" data-confirm="Cancel this order?"><button class="btn outline" style="width:auto;height:auto">Cancel</button></form>
+    {% endif %}
   </div>
   {% else %}
   <p>No orders yet.</p>

@@ -10,6 +10,9 @@
     <small>Ship to: {{ o.order.name }} · {{ o.order.phone }} · {{ o.order.address }} · {{ o.order.payment }}</small><br>
     {% endif %}
     <b>Total: ${{ o.order.total }}</b>
+    {% if o.order.status == "cancelled" %}
+    <span class="label">cancelled</span>
+    {% else %}
     <form method="post" action="/admin/orders/{{ o.order.id }}">
       <select name="status">
         {% for s in statuses %}
@@ -18,6 +21,10 @@
       </select>
       <button class="btn">Update</button>
     </form>
+    {% if o.order.status == "pending" %}
+    <form method="post" action="/order/{{ o.order.id }}/cancel" data-confirm="Cancel this order?"><input type="hidden" name="from" value="admin"><button class="btn outline">Cancel order</button></form>
+    {% endif %}
+    {% endif %}
   </div>
   {% else %}
   <p>No orders yet.</p>

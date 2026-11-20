@@ -13,6 +13,7 @@
       <span>{% if i.price %}${{ i.price * i.quantity }}{% endif %}</span>
     </div>
     {% endfor %}
+    {% if order.discount %}<div class="row"><span>Coupon {{ order.coupon }}</span><span>-${{ order.discount }}</span></div>{% endif %}
     <div class="total">Total: ${{ order.total }}</div>
   </div>
 
@@ -25,6 +26,9 @@
   </div>
   {% endif %}
 
+  {% if order.status == "pending" %}
+  <form method="post" action="/order/{{ order.id }}/cancel" data-confirm="Cancel this order?"><button class="btn outline">Cancel order</button></form><br>
+  {% endif %}
   <a class="btn" href="/">Keep shopping</a>
 </div>
 {% endblock %}

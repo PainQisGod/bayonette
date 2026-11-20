@@ -70,4 +70,32 @@
   </div>
 </section>
 {% endif %}
-{% endblock %}
+{% if related %}
+<section>
+  <h2>You may also like</h2>
+  <div class="grid4">
+    {% for m in related %}
+    <div class="product">
+      <a href="/product/{{ m.id }}">
+        <div class="poster" style="background: linear-gradient(155deg, hsl({{ m.hue }},70%,48%), hsl({{ m.hue + 40 }},60%,22%))">{{ m.name }}</div>
+      </a>
+      <div class="info"><small>${{ m.price }}</small></div>
+    </div>
+    {% endfor %}
+  </div>
+</section>{% endif %}
+{% if recent %}
+<section>
+  <h2>Recently viewed</h2>
+  <div class="grid4">
+    {% for r in recent %}
+    <div class="product">
+      <a href="/product/{{ r.id }}">
+        <div class="poster" style="background: linear-gradient(155deg, hsl({{ r.hue }},70%,48%), hsl({{ r.hue + 40 }},60%,22%))">{{ r.name }}</div>
+      </a>
+      <div class="info"><small>${{ r.price }}</small></div>
+    </div>
+    {% endfor %}
+  </div>
+</section>{% endif %}
+{% endblock %}

@@ -19,7 +19,7 @@
       </label>
       {% endfor %}
 
-      <button class="btn">Place order - ${{ total }}</button>
+      <button class="btn">Place order - ${{ total - discount }}</button>
     </form>
 
     <div class="box summary">
@@ -30,7 +30,8 @@
         <span>${{ item.product.price * item.quantity }}</span>
       </div>
       {% endfor %}
-      <div class="total">Total: ${{ total }}</div>
+      {% if code %}<div class="row"><span>Coupon {{ code }}</span><span>-${{ discount }}</span></div>{% endif %}
+      <div class="total">Total: ${{ total - discount }}</div>
     </div>
   </div>
 </section>

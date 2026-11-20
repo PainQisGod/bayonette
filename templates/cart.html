@@ -14,7 +14,18 @@
   {% else %}
   <p>Your cart is empty.</p>
   {% endfor %}
-  <div class="total">Total: ${{ total }}</div>
+  {% if items %}
+  {% if code %}
+  <div class="row"><span>Coupon {{ code }}</span><span>-${{ discount }}
+    <form class="inline" method="post" action="/coupon/remove"><button aria-label="Remove coupon">x</button></form></span></div>
+  {% else %}
+  <form class="filters" method="post" action="/coupon">
+    <input name="code" placeholder="Coupon code">
+    <button class="btn outline">Apply</button>
+  </form>
+  {% endif %}
+  {% endif %}
+  <div class="total">Total: ${{ total - discount }}</div>
   {% if items %}
   <a class="btn" href="/checkout">Checkout</a>
   {% endif %}
