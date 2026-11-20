@@ -1,5 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
+{% if recent %}<section>
+  <h2>Recently viewed</h2>
+  <div class="grid4">
+    {% for r in recent %}
+    <div class="product">
+      <a href="/product/{{ r.id }}">
+        <div class="poster" style="background: linear-gradient(155deg, hsl({{ r.hue }},70%,48%), hsl({{ r.hue + 40 }},60%,22%))">{{ r.name }}</div>
+      </a>
+      <div class="info"><small>${{ r.price }}</small></div>
+    </div>
+    {% endfor %}
+  </div>
+</section>{% endif %}
 <section>
   <form class="filters" method="get" action="/">
     <input type="hidden" name="q" value="{{ q }}">
@@ -46,5 +59,13 @@
     <p>No products found.</p>
     {% endfor %}
   </div>
+  {% if pages > 1 %}
+  {% set base = "/?q=" ~ q|urlencode ~ "&category=" ~ category|urlencode ~ "&sort=" ~ sort ~ "&page=" %}
+  <div class="pager">
+    {% if page > 1 %}<a class="btn outline" href="{{ base }}{{ page - 1 }}">← Prev</a>{% endif %}
+    <span>Page {{ page }} of {{ pages }}</span>
+    {% if page < pages %}<a class="btn outline" href="{{ base }}{{ page + 1 }}">Next →</a>{% endif %}
+  </div>
+  {% endif %}
 </section>
 {% endblock %}
