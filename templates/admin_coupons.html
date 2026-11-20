@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <h2>Coupons <a href="/admin">← Products</a></h2>
+  <form class="filters" method="post">
+    <input name="code" placeholder="Code (e.g. SAVE10)" required>
+    <input name="percent" type="number" min="1" max="90" placeholder="% off" required>
+    <button class="btn">Add coupon</button>
+  </form>
+  {% for c in coupons %}
+  <div class="row">
+    <span><b>{{ c.code }}</b> <small>{{ c.percent }}% off · {% if c.active %}active{% else %}off{% endif %}</small></span>
+    <span>
+      <form class="inline" method="post" action="/admin/coupons/{{ c.id }}/toggle"><button style="width:auto;padding:0 8px">{% if c.active %}Disable{% else %}Enable{% endif %}</button></form>
+      <form class="inline" method="post" action="/admin/coupons/{{ c.id }}/delete" data-confirm="Delete this coupon?"><button>x</button></form>
+    </span>
+  </div>
+  {% else %}
+  <p>No coupons yet.</p>
+  {% endfor %}
+</section>
+{% endblock %}
