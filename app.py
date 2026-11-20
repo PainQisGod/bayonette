@@ -10,6 +10,9 @@ ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@bayonette.com").strip().lower
 
 STATUSES = ["pending", "shipped", "delivered"]
 PER_PAGE = 8
+TAX_PERCENT = 10
+SHIPPING_FEE = 5
+FREE_SHIPPING_OVER = 100
 
 CATEGORIES = {
     "Ridge Wool Throw": "Home", "Halcyon Desk Lamp": "Home", "Ember Mug Set": "Kitchen",
@@ -74,6 +77,16 @@ def setup():
         conn.execute("ALTER TABLE orders ADD COLUMN discount INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
         pass
+    for column in ["shipping", "tax"]:
+        try:
+            conn.execute("ALTER TABLE orders ADD COLUMN " + column + " INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+    for column in ["name", "phone", "address"]:
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN " + column + " TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
     try:
         conn.execute("ALTER TABLE products ADD COLUMN category TEXT DEFAULT 'General'")
     except sqlite3.OperationalError:
@@ -265,11 +278,19 @@ def coupon_discount(total):
     return code, total * row["percent"] // 100
 
 
+def price_summary(total):
+    code, discount = coupon_discount(total)
+    after = total - discount
+    shipping = 0 if after >= FREE_SHIPPING_OVER or after == 0 else SHIPPING_FEE
+    tax = after * TAX_PERCENT // 100
+    return {"code": code, "discount": discount, "shipping": shipping, "tax": tax,
+            "grand": after + shipping + tax, "tax_percent": TAX_PERCENT, "free_over": FREE_SHIPPING_OVER}
+
+
 @app.route("/cart")
 def cart():
     items, total = cart_items()
-    code, discount = coupon_discount(total)
-    return render_template("cart.html", items=items, total=total, code=code, discount=discount)
+    return render_template("cart.html", items=items, total=total, s=price_summary(total))
 
 
 @app.route("/coupon", methods=["POST"])
@@ -303,22 +324,30 @@ def checkout():
     items, total = cart_items()
     if not items:
         return redirect("/cart")
-    code, discount = coupon_discount(total)
+    s = price_summary(total)
     for item in items:
         if item["quantity"] > item["product"]["stock"]:
             flash("Not enough stock for " + item["product"]["name"] + ".")
             return redirect("/cart")
     if request.method == "GET":
-        return render_template("checkout.html", items=items, total=total, code=code, discount=discount, payments=PAYMENTS, form={})
+        conn = db()
+        user = conn.execute("SELECT name, phone, address FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+        conn.close()
+        form = {key: (user[key] if user else "") or "" for key in ["name", "phone", "address"]}
+        return render_template("checkout.html", items=items, total=total, s=s, payments=PAYMENTS, form=form)
 
     form = {key: request.form.get(key, "").strip() for key in ["name", "phone", "address", "payment"]}
     if not form["name"] or not form["phone"] or not form["address"] or form["payment"] not in PAYMENTS:
         flash("Please fill in every field.")
-        return render_template("checkout.html", items=items, total=total, code=code, discount=discount, payments=PAYMENTS, form=form)
+        return render_template("checkout.html", items=items, total=total, s=s, payments=PAYMENTS, form=form)
 
     conn = db()
-    order_id = conn.execute("INSERT INTO orders (user_id, total, name, phone, address, payment, coupon, discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                            (session["user_id"], total - discount, form["name"], form["phone"], form["address"], form["payment"], code, discount)).lastrowid
+    order_id = conn.execute("INSERT INTO orders (user_id, total, name, phone, address, payment, coupon, discount, shipping, tax) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            (session["user_id"], s["grand"], form["name"], form["phone"], form["address"], form["payment"],
+                             s["code"], s["discount"], s["shipping"], s["tax"])).lastrowid
+    if request.form.get("save"):
+        conn.execute("UPDATE users SET name = ?, phone = ?, address = ? WHERE id = ?",
+                     (form["name"], form["phone"], form["address"], session["user_id"]))
     for item in items:
         conn.execute("INSERT INTO order_items VALUES (?, ?, ?)", (order_id, item["product"]["id"], item["quantity"]))
         conn.execute("UPDATE products SET stock = stock - ? WHERE id = ?", (item["quantity"], item["product"]["id"]))
@@ -508,6 +537,20 @@ def profile():
 
     conn.close()
     return render_template("profile.html", user=user)
+
+
+@app.route("/profile/address", methods=["POST"])
+def save_address():
+    if "user_id" not in session:
+        return redirect("/login")
+    conn = db()
+    conn.execute("UPDATE users SET name = ?, phone = ?, address = ? WHERE id = ?",
+                 (request.form.get("name", "").strip(), request.form.get("phone", "").strip(),
+                  request.form.get("address", "").strip(), session["user_id"]))
+    conn.commit()
+    conn.close()
+    flash("Delivery details saved.")
+    return redirect("/profile")
 
 
 @app.route("/register", methods=["GET", "POST"])

@@ -19,7 +19,9 @@
       </label>
       {% endfor %}
 
-      <button class="btn">Place order - ${{ total - discount }}</button>
+      <label class="choice"><input type="checkbox" name="save" value="1" checked> Save these details to my profile</label>
+
+      <button class="btn">Place order - ${{ s.grand }}</button>
     </form>
 
     <div class="box summary">
@@ -30,8 +32,11 @@
         <span>${{ item.product.price * item.quantity }}</span>
       </div>
       {% endfor %}
-      {% if code %}<div class="row"><span>Coupon {{ code }}</span><span>-${{ discount }}</span></div>{% endif %}
-      <div class="total">Total: ${{ total - discount }}</div>
+      <div class="row"><span>Subtotal</span><span>${{ total }}</span></div>
+      {% if s.code %}<div class="row"><span>Coupon {{ s.code }}</span><span>-${{ s.discount }}</span></div>{% endif %}
+      <div class="row"><span>Shipping</span><span>{% if s.shipping %}${{ s.shipping }}{% else %}Free{% endif %}</span></div>
+      <div class="row"><span>Tax ({{ s.tax_percent }}%)</span><span>${{ s.tax }}</span></div>
+      <div class="total">Total: ${{ s.grand }}</div>
     </div>
   </div>
 </section>

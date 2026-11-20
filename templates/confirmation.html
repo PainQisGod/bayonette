@@ -13,7 +13,10 @@
       <span>{% if i.price %}${{ i.price * i.quantity }}{% endif %}</span>
     </div>
     {% endfor %}
+    <div class="row"><span>Subtotal</span><span>${{ order.total - order.shipping - order.tax + order.discount }}</span></div>
     {% if order.discount %}<div class="row"><span>Coupon {{ order.coupon }}</span><span>-${{ order.discount }}</span></div>{% endif %}
+    <div class="row"><span>Shipping</span><span>{% if order.shipping %}${{ order.shipping }}{% else %}Free{% endif %}</span></div>
+    {% if order.tax %}<div class="row"><span>Tax</span><span>${{ order.tax }}</span></div>{% endif %}
     <div class="total">Total: ${{ order.total }}</div>
   </div>
 

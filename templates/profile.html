@@ -17,5 +17,19 @@
 
     <button class="btn">Save changes</button>
   </form>
+
+  <h2>Delivery details</h2>
+  <form method="post" action="/profile/address">
+    <label>Full name</label>
+    <input name="name" value="{{ user.name or '' }}">
+
+    <label>Phone</label>
+    <input name="phone" type="tel" value="{{ user.phone or '' }}">
+
+    <label>Delivery address</label>
+    <textarea name="address">{{ user.address or '' }}</textarea>
+
+    <button class="btn">Save delivery details</button>
+  </form>
 </div>
 {% endblock %}
