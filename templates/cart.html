@@ -15,17 +15,22 @@
   <p>Your cart is empty.</p>
   {% endfor %}
   {% if items %}
-  {% if code %}
-  <div class="row"><span>Coupon {{ code }}</span><span>-${{ discount }}
-    <form class="inline" method="post" action="/coupon/remove"><button aria-label="Remove coupon">x</button></form></span></div>
-  {% else %}
+  {% if not s.code %}
   <form class="filters" method="post" action="/coupon">
     <input name="code" placeholder="Coupon code">
     <button class="btn outline">Apply</button>
   </form>
   {% endif %}
+  <div class="row"><span>Subtotal</span><span>${{ total }}</span></div>
+  {% if s.code %}
+  <div class="row"><span>Coupon {{ s.code }}</span><span>-${{ s.discount }}
+    <form class="inline" method="post" action="/coupon/remove"><button aria-label="Remove coupon">x</button></form></span></div>
   {% endif %}
-  <div class="total">Total: ${{ total - discount }}</div>
+  <div class="row"><span>Shipping</span><span>{% if s.shipping %}${{ s.shipping }}{% else %}Free{% endif %}</span></div>
+  {% if s.shipping %}<small>Free shipping on orders over ${{ s.free_over }} after discounts.</small>{% endif %}
+  <div class="row"><span>Tax ({{ s.tax_percent }}%)</span><span>${{ s.tax }}</span></div>
+  {% endif %}
+  <div class="total">Total: ${{ s.grand }}</div>
   {% if items %}
   <a class="btn" href="/checkout">Checkout</a>
   {% endif %}
