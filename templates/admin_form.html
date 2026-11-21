@@ -1,23 +1,24 @@
 {% extends "base.html" %}
+{% block title %}{% if product %}Edit {{ product.name }}{% else %}New product{% endif %} — Bayonette Studio{% endblock %}
 {% block content %}
-<div class="page">
-  <h2>{% if product %}Edit product{% else %}New product{% endif %}</h2>
-  <form method="post">
-    <label>Name</label>
-    <input name="name" value="{{ product.name if product }}" required>
-    <label>Brand</label>
-    <input name="brand" value="{{ product.brand if product }}" required>
-    <label>Category</label>
-    <input name="category" value="{{ product.category if product else 'General' }}" required>
-    <label>Price ($)</label>
-    <input type="number" name="price" min="1" value="{{ product.price if product }}" required>
-    <label>Stock</label>
-    <input type="number" name="stock" min="0" value="{{ product.stock if product else 10 }}" required>
-    <label>Color (0-360)</label>
-    <input type="number" name="hue" min="0" max="360" value="{{ product.hue if product else 200 }}" required>
-    <label>Description</label>
-    <input name="description" value="{{ product.description if product }}" required>
-    <button class="btn">Save</button>
+<section class="studio-page">
+  <div class="studio-heading">
+    <div><span class="eyebrow"><span class="eyebrow-line"></span>Bayonette / Studio / Collection</span><h1>{% if product %}Edit product{% else %}New product{% endif %}<span>.</span></h1><p>Every detail helps shape the collection.</p></div>
+    <a class="btn btn-quiet" href="/admin">← Back to products</a>
+  </div>
+  <div class="studio-nav"><a href="/admin/dashboard">Overview</a><a class="active" href="/admin">Products</a><a href="/admin/orders">Orders</a><a href="/admin/coupons">Coupons</a><a href="/admin/messages">Messages</a></div>
+  <form class="studio-product-form" method="post">
+    <div class="studio-form-intro"><span class="eyebrow">Product details</span><h2>{% if product %}Refine this piece{% else %}Add to the collection{% endif %}</h2><p>Keep product information accurate and easy to understand.</p></div>
+    <div class="studio-form-grid">
+      <label class="studio-field studio-field-wide">Product name<input name="name" value="{{ product.name if product else '' }}" placeholder="e.g. Ridge Wool Throw" required></label>
+      <label class="studio-field">Brand<input name="brand" value="{{ product.brand if product else '' }}" placeholder="Brand or maker" required></label>
+      <label class="studio-field">Category<input name="category" value="{{ product.category if product else 'General' }}" placeholder="e.g. Home" required></label>
+      <label class="studio-field">Price (USD)<input type="number" name="price" min="1" value="{{ product.price if product else '' }}" required></label>
+      <label class="studio-field">Available stock<input type="number" name="stock" min="0" value="{{ product.stock if product else 10 }}" required></label>
+      <label class="studio-field">Artwork hue <span class="field-hint">A color value from 0 to 360</span><input type="number" name="hue" min="0" max="360" value="{{ product.hue if product else 200 }}" required></label>
+      <label class="studio-field studio-field-wide">Description<textarea name="description" rows="5" placeholder="Describe the materials, features and details..." required>{{ product.description if product else '' }}</textarea></label>
+    </div>
+    <div class="studio-form-footer"><span>Changes are saved to your product catalogue.</span><button class="btn" type="submit">{% if product %}Save changes{% else %}Create product{% endif %} ↗</button></div>
   </form>
-</div>
+</section>
 {% endblock %}
