@@ -221,7 +221,7 @@ class ShopFlowTests(unittest.TestCase):
     def test_product_detail_template_renders(self):
         response = self.client.get(f"/product/{self.product['id']}")
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Notes &amp; reviews", response.data)
+        self.assertIn(b"Notes & reviews", response.data)
 
     def test_studio_pages_and_product_editor_render_for_admin(self):
         with self.client.session_transaction() as session:
