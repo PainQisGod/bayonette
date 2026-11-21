@@ -1,14 +1,9 @@
 {% extends "base.html" %}
+{% block title %}Messages — Bayonette Studio{% endblock %}
 {% block content %}
-<section>
-  <h2>Messages <a href="/admin">← Products</a></h2>
-  {% for m in messages %}
-  <div class="box">
-    <b>{{ m.name }}</b> <small>{{ m.email }} · {{ m.created }}</small>
-    <p>{{ m.message }}</p>
-  </div>
-  {% else %}
-  <p><small>No messages yet.</small></p>
-  {% endfor %}
+<section class="studio-page">
+  <div class="studio-heading"><div><span class="eyebrow"><span class="eyebrow-line"></span>Bayonette / Studio</span><h1>Messages<span>.</span></h1><p>Customer notes and enquiries, all in one place.</p></div></div>
+  <div class="studio-nav"><a href="/admin/dashboard">Overview</a><a href="/admin">Products</a><a href="/admin/orders">Orders</a><a href="/admin/coupons">Coupons</a><a class="active" href="/admin/messages">Messages</a></div>
+  <div class="admin-message-list">{% for m in messages %}<article class="admin-message"><div class="admin-message-heading"><div><b>{{ m.name }}</b><a href="mailto:{{ m.email }}">{{ m.email }}</a></div><small>{{ m.created }}</small></div><p>{{ m.message }}</p></article>{% else %}<div class="admin-empty">No messages yet. Customer enquiries will show up here.</div>{% endfor %}</div>
 </section>
 {% endblock %}
