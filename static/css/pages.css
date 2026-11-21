@@ -1,54 +1,32 @@
-/* styles for the About, FAQ, Contact, 404 and Messages pages */
-
-.footer-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-.footer-links a { margin-left: 18px; opacity: 0.75; }
-.footer-links a:hover { opacity: 1; }
-
-.prose { max-width: 680px; margin: 40px auto; line-height: 1.7; }
-.prose h1 { font-family: "Syne", sans-serif; font-size: 36px; margin-bottom: 6px; }
-.prose p { color: var(--muted); }
-
-.faq details { background: var(--card); border: 1px solid var(--border); padding: 14px 16px; margin-bottom: 10px; }
-.faq summary { font-weight: 800; cursor: pointer; }
-.faq details p { margin: 10px 0 0; }
-
-.notfound { text-align: center; padding: 80px 0; }
-.notfound .big { font-family: "Syne", sans-serif; font-size: 120px; font-weight: 800; color: var(--accent); line-height: 1; }
-
-.values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 30px 0; }
-.values div { background: var(--card); border: 1px solid var(--border); padding: 16px; }
-.values b { display: block; margin-bottom: 4px; }
-.values small { display: block; }
-
-textarea { width: 100%; min-height: 120px; padding: 10px; margin: 6px 0 14px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: inherit; }
-
-@media (max-width: 860px) { .values { grid-template-columns: 1fr; } }
-
-/* theme button and pop-up message (used by js/main.js) */
-.theme-btn { background: none; border: 1px solid #ffffff55; color: inherit; padding: 6px 12px; cursor: pointer; }
-.theme-btn:hover { border-color: var(--accent); }
-
-#toast {
-  position: fixed; bottom: 24px; left: 50%;
-  transform: translate(-50%, 20px);
-  background: var(--text); color: var(--bg);
-  padding: 12px 20px; font-weight: 600;
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.2s, transform 0.2s;
-  z-index: 50;
-}
-#toast.show { opacity: 1; transform: translate(-50%, 0); }
-
-/* checkout and order confirmation */
-.checkout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 30px; align-items: start; }
-.checkout-form input:not([type="radio"]) { width: 100%; padding: 10px; margin: 6px 0 14px; border: 1px solid var(--border); background: var(--card); color: var(--text); }
-.checkout-form label { font-weight: 600; }
-.choice { display: flex; gap: 8px; align-items: center; font-weight: 400 !important; margin: 8px 0; cursor: pointer; }
-.checkout-form .btn { margin-top: 14px; }
-.summary { position: sticky; top: 80px; }
-
-.confirm { text-align: center; }
-.confirm .box { text-align: left; margin-top: 16px; }
-.check { width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 50%; background: var(--accent); color: white; font-size: 34px; line-height: 64px; }
-
-@media (max-width: 860px) { .checkout { grid-template-columns: 1fr; } .summary { position: static; } }
+/* Informational pages, forms, checkout and confirmations */
+.prose{max-width:760px;margin:68px auto;line-height:1.85}
+.prose h1{font-family:"Manrope",sans-serif;font-size:clamp(38px,6vw,62px);line-height:1.05;letter-spacing:-3px;margin:12px 0 18px}
+.prose p{font-size:13px;line-height:1.9}
+.footer-row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.footer-links a{margin-left:18px;color:#a99c8c;font-size:11px}
+.footer-links a:hover{color:#e5a17b}
+.values{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:34px 0}
+.values div{background:var(--surface);border:1px solid var(--border);padding:20px}
+.values b{display:block;margin-bottom:8px;font-family:"Manrope",sans-serif}
+.values small{display:block;line-height:1.7}
+.faq details{background:var(--surface);border:1px solid var(--border);padding:18px 20px;margin-bottom:10px}
+.faq summary{font-family:"Manrope",sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.faq details p{margin:12px 0 0;font-size:12px}
+.notfound{text-align:center;padding:100px 0}
+.notfound .big{font-family:"Manrope",sans-serif;font-size:clamp(100px,20vw,180px);font-weight:800;color:var(--accent);line-height:1;letter-spacing:-12px}
+textarea{width:100%;min-height:120px;padding:12px 13px;margin:5px 0 13px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;resize:vertical}
+.checkout{display:grid;grid-template-columns:1.25fr .85fr;gap:30px;align-items:start;margin-top:25px}
+.checkout-form{background:var(--surface);border:1px solid var(--border);padding:clamp(20px,4vw,36px)}
+.checkout-form label{font-weight:600}
+.checkout-form .choice{display:flex;gap:10px;align-items:center;font-weight:400!important;margin:10px 0;cursor:pointer;color:var(--muted);font-size:12px}
+.checkout-form .choice input{accent-color:var(--accent)}
+.checkout-form .btn{margin-top:18px;width:100%;padding:14px}
+.summary{position:sticky;top:110px;padding:24px}
+.summary>b{font-family:"Manrope",sans-serif;font-size:17px}
+.summary .row{font-size:11px}
+.confirm{text-align:center;max-width:640px}
+.confirm .check{width:58px;height:58px;margin:0 auto 20px;border-radius:50%;background:var(--accent);color:white;font-size:28px;line-height:58px}
+.confirm .box{text-align:left;margin-top:25px}
+.confirm>.btn{margin:8px}
+.confirm form{display:inline-block}
+@media(max-width:860px){.two,.checkout{grid-template-columns:1fr}.summary{position:static}.values{grid-template-columns:1fr}.prose{margin:42px auto}}
