@@ -1,8 +1,11 @@
-/* admin dashboard */
-
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 30px; }
-.stat { background: var(--card); border: 1px solid var(--border); padding: 16px; }
-.stat b { display: block; font-family: "Syne", sans-serif; font-size: 28px; }
-.bar { background: var(--accent); height: 10px; margin-top: 4px; }
-
-@media (max-width: 860px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+/* Admin studio */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:26px 0 38px}
+.stat{background:var(--surface);border:1px solid var(--border);padding:22px}
+.stat small{display:block;text-transform:uppercase;letter-spacing:1.2px;font-size:9px}
+.stat b{display:block;font-size:clamp(23px,3vw,34px);letter-spacing:-1.5px;margin-top:9px;color:var(--accent-strong)}
+.bar{background:linear-gradient(90deg,var(--accent),var(--gold));height:7px;margin-top:8px}
+.admin-nav{display:flex;flex-wrap:wrap;gap:10px}
+.admin-table,.admin-panel{background:var(--surface);border:1px solid var(--border)}
+.admin-panel{padding:22px}
+@media(max-width:860px){.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.stats{grid-template-columns:1fr 1fr;gap:8px}.stat{padding:14px}.stat b{font-size:22px}}
