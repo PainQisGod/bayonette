@@ -25,7 +25,15 @@ A small Flask shop with accounts, a cart, orders and an admin area. Data is stor
 Then open http://127.0.0.1:5000
 
 The admin email defaults to `admin@bayonette.com`. Set the `ADMIN_EMAIL`
-environment variable before starting the app to use a different address.
+environment variable before starting the app to use a different address. That
+address is reserved and cannot be claimed through public registration.
+
+## Security configuration
+
+Set a long, random `SECRET_KEY` environment variable before deploying so
+sessions remain secure across restarts. Also set
+`SESSION_COOKIE_SECURE=true` when serving the site over HTTPS. The app uses
+CSRF tokens for all POST forms and clears the session when users log in or out.
 
 ## Files
 
