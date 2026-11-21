@@ -2,15 +2,12 @@ var root = document.documentElement;
 var toastTimer;
 
 // ---------- Dark / Light theme ----------
-// Dark luxury is the default. A saved light preference overrides it.
 try {
   var saved = localStorage.getItem("theme");
   if (saved === "light" || saved === "dark") root.classList.add(saved);
 } catch (e) {}
 
-function isDark() {
-  return !root.classList.contains("light");
-}
+function isDark() { return !root.classList.contains("light"); }
 
 function updateThemeButton() {
   var button = document.getElementById("theme-toggle");
@@ -25,6 +22,15 @@ function toggleTheme() {
   updateThemeButton();
 }
 
+// Keep CSRF form fields when posting asynchronously.
+function postForm(form) {
+  return fetch(form.getAttribute("action"), {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+    body: new URLSearchParams(new FormData(form)).toString()
+  });
+}
+
 // ---------- Pop-up message ----------
 function showToast(text) {
   var toast = document.getElementById("toast");
@@ -34,23 +40,24 @@ function showToast(text) {
   toastTimer = setTimeout(function () { toast.classList.remove("show"); }, 2500);
 }
 
-// ---------- Add to cart without reloading the page ----------
+// ---------- Add to cart without reloading ----------
 function addToCart(form) {
-  fetch(form.getAttribute("action"), { method: "POST" })
+  postForm(form)
     .then(function (response) { return response.text(); })
     .then(function (html) {
       var page = new DOMParser().parseFromString(html, "text/html");
       var count = page.getElementById("cart-count");
       var message = page.querySelector(".flash");
-      if (count) document.getElementById("cart-count").textContent = count.textContent;
-      showToast(message ? message.textContent.trim() : "Added to cart");
+      var currentCount = document.getElementById("cart-count");
+      if (count && currentCount) currentCount.textContent = count.textContent;
+      showToast(message ? message.textContent.trim() : "Added to bag");
     })
     .catch(function () { form.submit(); });
 }
 
-// ---------- Wishlist heart without reloading the page ----------
+// ---------- Wishlist heart without reloading ----------
 function toggleWish(form) {
-  fetch(form.getAttribute("action"), { method: "POST" })
+  postForm(form)
     .then(function (response) {
       if (response.url.indexOf("/login") !== -1) {
         window.location = "/login";
