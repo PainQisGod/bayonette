@@ -1,22 +1,11 @@
 {% extends "base.html" %}
+{% block title %}Coupons — Bayonette Studio{% endblock %}
 {% block content %}
-<section>
-  <h2>Coupons <a href="/admin">← Products</a></h2>
-  <form class="filters" method="post">
-    <input name="code" placeholder="Code (e.g. SAVE10)" required>
-    <input name="percent" type="number" min="1" max="90" placeholder="% off" required>
-    <button class="btn">Add coupon</button>
-  </form>
-  {% for c in coupons %}
-  <div class="row">
-    <span><b>{{ c.code }}</b> <small>{{ c.percent }}% off · {% if c.active %}active{% else %}off{% endif %}</small></span>
-    <span>
-      <form class="inline" method="post" action="/admin/coupons/{{ c.id }}/toggle"><button style="width:auto;padding:0 8px">{% if c.active %}Disable{% else %}Enable{% endif %}</button></form>
-      <form class="inline" method="post" action="/admin/coupons/{{ c.id }}/delete" data-confirm="Delete this coupon?"><button>x</button></form>
-    </span>
-  </div>
-  {% else %}
-  <p>No coupons yet.</p>
-  {% endfor %}
+<section class="studio-page">
+  <div class="studio-heading"><div><span class="eyebrow"><span class="eyebrow-line"></span>Bayonette / Studio</span><h1>Coupons<span>.</span></h1><p>Create and manage offers for your customers.</p></div></div>
+  <div class="studio-nav"><a href="/admin/dashboard">Overview</a><a href="/admin">Products</a><a href="/admin/orders">Orders</a><a class="active" href="/admin/coupons">Coupons</a><a href="/admin/messages">Messages</a></div>
+  <div class="admin-panel coupon-create"><div><span class="eyebrow">New offer</span><h2>Create a coupon</h2><p>Keep the code short and easy to remember.</p></div><form class="filters" method="post"><input name="code" placeholder="Code (e.g. SAVE10)" required><input name="percent" type="number" min="1" max="90" placeholder="% off" required><button class="btn" type="submit">Add coupon ↗</button></form></div>
+  <div class="admin-list-heading"><div><h2>All coupons</h2><small>{{ coupons|length }} codes</small></div></div>
+  <div class="admin-coupon-list">{% for c in coupons %}<article class="admin-coupon-row"><div class="coupon-mark">%</div><div class="coupon-main"><b>{{ c.code }}</b><small>{{ c.percent }}% off</small></div><span class="order-status status-pill {% if c.active %}status-delivered{% else %}status-cancelled{% endif %}">{% if c.active %}Active{% else %}Disabled{% endif %}</span><div class="admin-coupon-actions"><form class="inline" method="post" action="/admin/coupons/{{ c.id }}/toggle"><button class="text-action" type="submit">{% if c.active %}Disable{% else %}Enable{% endif %}</button></form><form class="inline" method="post" action="/admin/coupons/{{ c.id }}/delete" data-confirm="Delete this coupon?"><button class="text-action danger" type="submit">Delete</button></form></div></article>{% else %}<div class="admin-empty">No coupons yet. Create your first offer above.</div>{% endfor %}</div>
 </section>
 {% endblock %}
