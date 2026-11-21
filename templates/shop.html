@@ -1,71 +1,10 @@
 {% extends "base.html" %}
+{% block title %}Shop the collection — Bayonette{% endblock %}
 {% block content %}
-{% if recent %}<section>
-  <h2>Recently viewed</h2>
-  <div class="grid4">
-    {% for r in recent %}
-    <div class="product">
-      <a href="/product/{{ r.id }}">
-        <div class="poster" style="background: linear-gradient(155deg, hsl({{ r.hue }},70%,48%), hsl({{ r.hue + 40 }},60%,22%))">{{ r.name }}</div>
-      </a>
-      <div class="info"><small>${{ r.price }}</small></div>
-    </div>
-    {% endfor %}
-  </div>
-</section>{% endif %}
-<section>
-  <form class="filters" method="get" action="/">
-    <input type="hidden" name="q" value="{{ q }}">
-    <select name="category" onchange="this.form.submit()">
-      <option value="">All categories</option>
-      {% for c in categories %}
-      <option value="{{ c }}" {% if c == category %}selected{% endif %}>{{ c }}</option>
-      {% endfor %}
-    </select>
-    <select name="sort" onchange="this.form.submit()">
-      <option value="">Newest first</option>
-      <option value="low" {% if sort == "low" %}selected{% endif %}>Price: low to high</option>
-      <option value="high" {% if sort == "high" %}selected{% endif %}>Price: high to low</option>
-      <option value="name" {% if sort == "name" %}selected{% endif %}>Name A-Z</option>
-      <option value="rating" {% if sort == "rating" %}selected{% endif %}>Top rated</option>
-    </select>
-    <button class="btn">Filter</button>
-  </form>
-  <h2>{% if q %}Results for "{{ q }}"{% else %}All Products{% endif %}</h2>
-  <div class="grid4">
-    {% for p in products %}
-    <div class="product">
-      <a href="/product/{{ p.id }}">
-      <div class="poster" style="background: linear-gradient(155deg, hsl({{ p.hue }},70%,48%), hsl({{ p.hue + 40 }},60%,22%))">{{ p.name }}</div>
-      </a>
-      <div class="info">
-        <form class="inline wish-form" method="post" action="/wishlist/{{ p.id }}">
-          <button class="wish {% if p.id in wished %}on{% endif %}" type="submit" aria-label="Save to wishlist">{% if p.id in wished %}♥{% else %}♡{% endif %}</button>
-        </form>
-        <small>{{ p.brand }} · {{ p.category }}</small><br>
-        {% if p.review_count %}<span class="stars">★ {{ "%.1f"|format(p.avg_rating) }}</span> <small>({{ p.review_count }})</small><br>{% endif %}
-        <small>{{ p.description }}</small><br><br>
-        <form method="post" action="/add/{{ p.id }}">
-          {% if p.stock > 0 %}
-            <button class="btn">Add to cart - ${{ p.price }}</button>
-            {% if p.stock <= 3 %}<small>Only {{ p.stock }} left</small>{% endif %}
-          {% else %}
-            <button class="btn outline" disabled>Sold out</button>
-          {% endif %}
-        </form>
-      </div>
-    </div>
-    {% else %}
-    <p>No products found.</p>
-    {% endfor %}
-  </div>
-  {% if pages > 1 %}
-  {% set base = "/?q=" ~ q|urlencode ~ "&category=" ~ category|urlencode ~ "&sort=" ~ sort ~ "&page=" %}
-  <div class="pager">
-    {% if page > 1 %}<a class="btn outline" href="{{ base }}{{ page - 1 }}">← Prev</a>{% endif %}
-    <span>Page {{ page }} of {{ pages }}</span>
-    {% if page < pages %}<a class="btn outline" href="{{ base }}{{ page + 1 }}">Next →</a>{% endif %}
-  </div>
-  {% endif %}
-</section>
+{% if not q and not category %}<section class="storefront-hero"><div class="hero-copy"><span class="eyebrow"><span class="eyebrow-line"></span> THE BAYONETTE EDIT</span><h1>Less, but<br><em>better.</em></h1><p>Everyday pieces with a little more thought behind them. Explore the collection and find your next favourite.</p><a class="text-cta" href="#collection">Explore the collection <span>↘</span></a></div><div class="hero-art" aria-label="Abstract warm-toned product composition"><div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div><div class="hero-sculpture"><span></span><span></span><span></span></div><div class="hero-art-caption"><span>01 / THE EVERYDAY EDIT</span><span>OBJECTS WITH INTENTION</span></div></div><div class="hero-index">B / 026</div></section>{% endif %}
+{% if recent %}<section><div class="section-heading"><div><span class="eyebrow">PICK UP WHERE YOU LEFT OFF</span><h2>Recently viewed</h2></div></div><div class="grid4">{% for r in recent %}<article class="product"><a class="product-visual" href="/product/{{ r.id }}"><div class="poster" style="--product-hue:{{ r.hue }}"><span class="poster-name">{{ r.name }}</span></div></a><div class="info"><a class="product-name" href="/product/{{ r.id }}">{{ r.name }}</a><strong>&#36;{{ r.price }}</strong></div></article>{% endfor %}</div></section>{% endif %}
+<section id="collection" class="collection-section"><div class="section-heading"><div><span class="eyebrow">CURATED FOR EVERY DAY</span><h2>{% if q %}Search results{% elif category %}{{ category }}{% else %}The collection{% endif %}</h2><p class="muted-copy">{% if q %}Showing matches for “{{ q }}”{% else %}Useful things. Beautifully considered.{% endif %}</p></div><span class="collection-note">{{ products|length }} PIECES TO EXPLORE</span></div>
+<form class="filters collection-filters" method="get" action="/"><input type="hidden" name="q" value="{{ q }}"><label class="filter-label">Category<select name="category" onchange="this.form.submit()"><option value="">All categories</option>{% for c in categories %}<option value="{{ c }}" {% if c == category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></label><label class="filter-label">Sort by<select name="sort" onchange="this.form.submit()"><option value="">Newest first</option><option value="low" {% if sort == "low" %}selected{% endif %}>Price: low to high</option><option value="high" {% if sort == "high" %}selected{% endif %}>Price: high to low</option><option value="name" {% if sort == "name" %}selected{% endif %}>Name A–Z</option><option value="rating" {% if sort == "rating" %}selected{% endif %}>Top rated</option></select></label><button class="filter-reset" type="submit">Apply filters <span>↗</span></button></form>
+<div class="grid4">{% for p in products %}<article class="product"><a class="product-visual" href="/product/{{ p.id }}"><div class="poster" style="--product-hue:{{ p.hue }}"><span class="poster-name">{{ p.name }}</span><span class="poster-index">B / {{ "%02d"|format(loop.index) }}</span></div></a><div class="info"><div class="product-meta"><small>{{ p.brand }} <span>·</span> {{ p.category }}</small><form class="inline wish-form" method="post" action="/wishlist/{{ p.id }}"><button class="wish {% if p.id in wished %}on{% endif %}" type="submit" aria-label="Save {{ p.name }} to wishlist">{% if p.id in wished %}♥{% else %}♡{% endif %}</button></form></div><a class="product-name" href="/product/{{ p.id }}">{{ p.name }}</a>{% if p.review_count %}<div class="product-rating"><span class="stars">★ {{ "%.1f"|format(p.avg_rating) }}</span> <small>({{ p.review_count }})</small></div>{% endif %}<p class="product-description">{{ p.description }}</p><div class="product-buy"><strong>&#36;{{ p.price }}</strong><form method="post" action="/add/{{ p.id }}">{% if p.stock > 0 %}<button class="add-button" type="submit" aria-label="Add {{ p.name }} to cart">Add to bag <span>↗</span></button>{% else %}<button class="add-button sold-out" type="button" disabled>Sold out</button>{% endif %}</form></div>{% if p.stock > 0 and p.stock <= 3 %}<small class="stock-note">Only {{ p.stock }} left</small>{% endif %}</div></article>{% else %}<div class="empty-state"><span class="eyebrow">NOT FOUND</span><h3>Nothing in this corner.</h3><p>Try another search or clear your filters.</p><a class="text-cta" href="/">Back to the collection <span>↗</span></a></div>{% endfor %}</div>
+{% if pages > 1 %}{% set base = "/?q=" ~ q|urlencode ~ "&category=" ~ category|urlencode ~ "&sort=" ~ sort ~ "&page=" %}<div class="pager">{% if page > 1 %}<a class="btn outline" href="{{ base }}{{ page - 1 }}">← Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}</span>{% if page < pages %}<a class="btn outline" href="{{ base }}{{ page + 1 }}">Next →</a>{% endif %}</div>{% endif %}</section>
 {% endblock %}
