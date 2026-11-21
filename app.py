@@ -370,17 +370,73 @@ def checkout():
         return render_template("checkout.html", items=items, total=total, s=s, payments=PAYMENTS, form=form)
 
     conn = db()
-    order_id = conn.execute("INSERT INTO orders (user_id, total, name, phone, address, payment, coupon, discount, shipping, tax) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                            (session["user_id"], s["grand"], form["name"], form["phone"], form["address"], form["payment"],
-                             s["code"], s["discount"], s["shipping"], s["tax"])).lastrowid
-    if request.form.get("save"):
-        conn.execute("UPDATE users SET name = ?, phone = ?, address = ? WHERE id = ?",
-                     (form["name"], form["phone"], form["address"], session["user_id"]))
-    for item in items:
-        conn.execute("INSERT INTO order_items VALUES (?, ?, ?)", (order_id, item["product"]["id"], item["quantity"]))
-        conn.execute("UPDATE products SET stock = stock - ? WHERE id = ?", (item["quantity"], item["product"]["id"]))
-    conn.commit()
-    conn.close()
+    try:
+        # Lock the database for this transaction, then re-check stock and prices.
+        conn.execute("BEGIN IMMEDIATE")
+        current_items = []
+        subtotal = 0
+
+        for item in items:
+            product_id = item["product"]["id"]
+            quantity = item["quantity"]
+            product = conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
+            if product is None or quantity < 1 or quantity > product["stock"]:
+                raise ValueError("Stock changed while you were checking out. Please review your cart.")
+
+            current_items.append((product, quantity))
+            subtotal += product["price"] * quantity
+
+        coupon_code = session.get("coupon", "")
+        coupon = conn.execute(
+            "SELECT code, percent FROM coupons WHERE code = ? AND active = 1",
+            (coupon_code,)
+        ).fetchone() if coupon_code else None
+        if coupon is None:
+            coupon_code = ""
+            discount = 0
+        else:
+            discount = subtotal * coupon["percent"] // 100
+
+        after_discount = subtotal - discount
+        shipping = 0 if after_discount >= FREE_SHIPPING_OVER or after_discount == 0 else SHIPPING_FEE
+        tax = after_discount * TAX_PERCENT // 100
+        grand_total = after_discount + shipping + tax
+
+        order_id = conn.execute(
+            "INSERT INTO orders (user_id, total, name, phone, address, payment, coupon, discount, shipping, tax) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (session["user_id"], grand_total, form["name"], form["phone"], form["address"],
+             form["payment"], coupon_code, discount, shipping, tax)
+        ).lastrowid
+
+        if request.form.get("save"):
+            conn.execute(
+                "UPDATE users SET name = ?, phone = ?, address = ? WHERE id = ?",
+                (form["name"], form["phone"], form["address"], session["user_id"])
+            )
+
+        for product, quantity in current_items:
+            updated = conn.execute(
+                "UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?",
+                (quantity, product["id"], quantity)
+            )
+            if updated.rowcount != 1:
+                raise ValueError("Stock changed while you were checking out. Please review your cart.")
+            conn.execute(
+                "INSERT INTO order_items VALUES (?, ?, ?)",
+                (order_id, product["id"], quantity)
+            )
+
+        conn.commit()
+    except ValueError as error:
+        conn.rollback()
+        flash(str(error))
+        return redirect("/cart")
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
     session["cart"] = {}
     session.pop("coupon", None)
     return redirect("/order/" + str(order_id))
