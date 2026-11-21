@@ -1,101 +1,64 @@
 {% extends "base.html" %}
+{% block title %}{{ p.name }} — Bayonette{% endblock %}
 {% block content %}
-<div class="hero">
-  <div class="poster" style="background: linear-gradient(155deg, hsl({{ p.hue }},70%,48%), hsl({{ p.hue + 40 }},60%,22%))">{{ p.name }}</div>
-  <div class="heroText">
-    <div class="label">{{ p.brand }} · {{ p.category }}</div>
-    <h1>{{ p.name }}</h1>
-    {% if reviews %}<div><span class="stars">★ {{ "%.1f"|format(average) }}</span> <small>({{ reviews|length }} review{{ "s" if reviews|length != 1 }})</small></div>{% endif %}
-    <p>{{ p.description }}</p>
-    <h2 style="border:0">${{ p.price }}</h2>
-    <form method="post" action="/add/{{ p.id }}">
-      {% if p.stock > 0 %}
-        <button class="btn">Add to cart</button>
-        {% if p.stock <= 3 %}<small>Only {{ p.stock }} left</small>{% endif %}
-      {% else %}
-        <button class="btn outline" disabled>Sold out</button>
-      {% endif %}
-    </form>
-    <div>
-      <form class="inline wish-form" method="post" action="/wishlist/{{ p.id }}">
-        <button class="wish {% if p.id in wished %}on{% endif %}" type="submit" aria-label="Save to wishlist">{% if p.id in wished %}♥{% else %}♡{% endif %}</button>
-      </form> <small>{% if p.id in wished %}In your wishlist{% else %}Save for later{% endif %}</small>
+<div class="product-detail">
+  <div class="detail-visual">
+    <div class="detail-poster" style="--product-hue: {{ p.hue }}">
+      <span class="detail-index">BAYONETTE / OBJECT {{ "%02d"|format(p.id) }}</span>
+      <span class="detail-orbit detail-orbit-one"></span><span class="detail-orbit detail-orbit-two"></span>
+      <span class="detail-object"></span>
+      <span class="detail-poster-name">{{ p.name }}</span>
+      <span class="detail-poster-foot">{{ p.brand }} · {{ p.category }}</span>
     </div>
-    <a href="/">← Back to shop</a>
+    <span class="detail-image-note">A closer look at the considered details</span>
+  </div>
+  <div class="detail-copy">
+    <a class="detail-back" href="/">← Back to collection</a>
+    <div class="eyebrow"><span class="eyebrow-line"></span>{{ p.brand }} / {{ p.category }}</div>
+    <h1>{{ p.name }}</h1>
+    {% if reviews %}<div class="detail-rating"><span class="stars">★ {{ "%.1f"|format(average) }}</span><span>{{ reviews|length }} review{{ "s" if reviews|length != 1 }}</span></div>{% else %}<div class="detail-rating"><span>New to the collection</span></div>{% endif %}
+    <p class="detail-description">{{ p.description }}</p>
+    <div class="detail-price-row"><strong>${{ p.price }}</strong><span class="detail-stock">{% if p.stock > 0 %}{% if p.stock <= 3 %}Only {{ p.stock }} left{% else %}In stock · Ready to ship{% endif %}{% else %}Currently sold out{% endif %}</span></div>
+    <div class="detail-actions">
+      <form method="post" action="/add/{{ p.id }}" class="detail-add-form">
+        {% if p.stock > 0 %}<button class="btn detail-add" type="submit">Add to bag <span>↗</span></button>{% else %}<button class="btn detail-add" type="button" disabled>Sold out</button>{% endif %}
+      </form>
+      <form class="inline wish-form" method="post" action="/wishlist/{{ p.id }}">
+        <button class="wish detail-wish {% if p.id in wished %}on{% endif %}" type="submit" aria-label="Save to wishlist">{% if p.id in wished %}♥{% else %}♡{% endif %}</button>
+      </form>
+    </div>
+    <div class="detail-perks"><div><span>01</span><b>Thoughtfully selected</b></div><div><span>02</span><b>Everyday essentials</b></div><div><span>03</span><b>Secure checkout</b></div></div>
   </div>
 </div>
 
-<section>
-  <h2>Reviews</h2>
+<section class="review-section">
+  <div class="section-heading"><div><span class="eyebrow">From the community</span><h2>Notes & reviews</h2></div><span class="collection-note">{{ reviews|length }} CONTRIBUTION{{ "" if reviews|length == 1 else "S" }}</span></div>
   {% if session.user_id %}
-  <form class="filters" method="post" action="/review/{{ p.id }}">
-    <select name="rating">
-      {% for n in [5, 4, 3, 2, 1] %}
-      <option value="{{ n }}" {% if mine and mine.rating == n %}selected{% endif %}>{{ "★" * n }}</option>
-      {% endfor %}
-    </select>
-    <input name="comment" maxlength="300" placeholder="Write a short review" value="{{ mine.comment if mine }}" required>
-    <button class="btn">{% if mine %}Update review{% else %}Post review{% endif %}</button>
+  <form class="review-form" method="post" action="/review/{{ p.id }}">
+    <div class="review-form-heading"><b>{% if mine %}Update your review{% else %}Leave a note{% endif %}</b><small>Your experience helps others choose well.</small></div>
+    <div class="review-form-fields">
+      <select name="rating" aria-label="Rating">{% for n in [5, 4, 3, 2, 1] %}<option value="{{ n }}" {% if mine and mine.rating == n %}selected{% endif %}>{{ "★" * n }} · {{ n }}/5</option>{% endfor %}</select>
+      <input name="comment" maxlength="300" placeholder="Share a short review..." value="{{ mine.comment if mine }}" required>
+      <button class="btn" type="submit">{% if mine %}Update review{% else %}Post review{% endif %} ↗</button>
+    </div>
   </form>
-  {% else %}
-  <p><a href="/login">Log in</a> to write a review.</p>
-  {% endif %}
-
-  {% for r in reviews %}
-  <div class="box">
-    <span class="stars">{{ "★" * r.rating }}{{ "☆" * (5 - r.rating) }}</span>
-    <b>{{ r.email.split("@")[0] }}</b> <small>{{ r.created }}</small>
-    {% if session.is_admin %}
-    <form class="inline" method="post" action="/admin/review/{{ r.id }}/delete" data-confirm="Delete this review?"><button>x</button></form>
-    {% endif %}
-    <p>{{ r.comment }}</p>
+  {% else %}<p class="review-login"><a class="link" href="/login">Sign in</a> to share your experience.</p>{% endif %}
+  <div class="review-list">
+    {% for r in reviews %}
+    <article class="review-card">
+      <div class="review-card-top"><div><span class="stars">{{ "★" * r.rating }}{{ "☆" * (5 - r.rating) }}</span><b>{{ r.email.split("@")[0] }}</b></div><small>{{ r.created }}</small></div>
+      <p>{{ r.comment }}</p>
+      {% if session.is_admin %}<form class="inline" method="post" action="/admin/review/{{ r.id }}/delete" data-confirm="Delete this review?"><button class="text-action" type="submit">Remove review</button></form>{% endif %}
+    </article>
+    {% else %}<div class="review-empty"><span>✳</span><b>Nothing here just yet.</b><p>Be the first to leave a note about this piece.</p></div>{% endfor %}
   </div>
-  {% else %}
-  <p><small>No reviews yet.</small></p>
-  {% endfor %}
 </section>
 
-{% if more %}
-<section>
-  <h2>More from {{ p.brand }}</h2>
-  <div class="grid4">
-    {% for m in more %}
-    <div class="product">
-      <a href="/product/{{ m.id }}">
-        <div class="poster" style="background: linear-gradient(155deg, hsl({{ m.hue }},70%,48%), hsl({{ m.hue + 40 }},60%,22%))">{{ m.name }}</div>
-      </a>
-      <div class="info"><small>${{ m.price }}</small></div>
-    </div>
-    {% endfor %}
-  </div>
+{% if more or related or recent %}
+<section class="detail-recommendations">
+  {% if more %}<div class="recommendation-group"><div class="section-heading"><div><span class="eyebrow">The same maker</span><h2>More from {{ p.brand }}</h2></div></div><div class="grid4">{% for m in more %}<a class="product" href="/product/{{ m.id }}"><div class="poster" style="--product-hue: {{ m.hue }}"><span class="poster-name">{{ m.name }}</span></div><div class="info"><b class="product-name">{{ m.name }}</b><strong>${{ m.price }}</strong></div></a>{% endfor %}</div></div>{% endif %}
+  {% if related %}<div class="recommendation-group"><div class="section-heading"><div><span class="eyebrow">A considered pairing</span><h2>You may also like</h2></div></div><div class="grid4">{% for m in related %}<a class="product" href="/product/{{ m.id }}"><div class="poster" style="--product-hue: {{ m.hue }}"><span class="poster-name">{{ m.name }}</span></div><div class="info"><b class="product-name">{{ m.name }}</b><strong>${{ m.price }}</strong></div></a>{% endfor %}</div></div>{% endif %}
+  {% if recent %}<div class="recommendation-group"><div class="section-heading"><div><span class="eyebrow">Back on your radar</span><h2>Recently viewed</h2></div></div><div class="grid4">{% for r in recent %}<a class="product" href="/product/{{ r.id }}"><div class="poster" style="--product-hue: {{ r.hue }}"><span class="poster-name">{{ r.name }}</span></div><div class="info"><b class="product-name">{{ r.name }}</b><strong>${{ r.price }}</strong></div></a>{% endfor %}</div></div>{% endif %}
 </section>
 {% endif %}
-{% if related %}
-<section>
-  <h2>You may also like</h2>
-  <div class="grid4">
-    {% for m in related %}
-    <div class="product">
-      <a href="/product/{{ m.id }}">
-        <div class="poster" style="background: linear-gradient(155deg, hsl({{ m.hue }},70%,48%), hsl({{ m.hue + 40 }},60%,22%))">{{ m.name }}</div>
-      </a>
-      <div class="info"><small>${{ m.price }}</small></div>
-    </div>
-    {% endfor %}
-  </div>
-</section>{% endif %}
-{% if recent %}
-<section>
-  <h2>Recently viewed</h2>
-  <div class="grid4">
-    {% for r in recent %}
-    <div class="product">
-      <a href="/product/{{ r.id }}">
-        <div class="poster" style="background: linear-gradient(155deg, hsl({{ r.hue }},70%,48%), hsl({{ r.hue + 40 }},60%,22%))">{{ r.name }}</div>
-      </a>
-      <div class="info"><small>${{ r.price }}</small></div>
-    </div>
-    {% endfor %}
-  </div>
-</section>{% endif %}
 {% endblock %}
