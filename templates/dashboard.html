@@ -1,43 +1,25 @@
 {% extends "base.html" %}
+{% block title %}Studio overview — Bayonette{% endblock %}
 {% block content %}
-<section>
-  <h2>Dashboard <a href="/admin">← Products</a></h2>
-
+<section class="studio-page">
+  <div class="studio-heading"><div><span class="eyebrow"><span class="eyebrow-line"></span>Bayonette / Studio</span><h1>Overview<span>.</span></h1><p>A clear view of how the shop is doing.</p></div><a class="btn" href="/admin">Manage products ↗</a></div>
+  <div class="studio-nav"><a class="active" href="/admin/dashboard">Overview</a><a href="/admin">Products</a><a href="/admin/orders">Orders</a><a href="/admin/coupons">Coupons</a><a href="/admin/messages">Messages</a></div>
   <div class="stats">
-    <div class="stat"><small>Total sales</small><b>${{ revenue }}</b></div>
-    <div class="stat"><small>Orders</small><b>{{ order_count }}</b></div>
-    <div class="stat"><small>Customers</small><b>{{ customers }}</b></div>
-    <div class="stat"><small>Average order</small><b>${{ average }}</b></div>
+    <div class="stat"><small>Total sales</small><b>${{ revenue }}</b><span class="stat-note">Across recorded orders</span></div>
+    <div class="stat"><small>Orders</small><b>{{ order_count }}</b><span class="stat-note">All order records</span></div>
+    <div class="stat"><small>Customers</small><b>{{ customers }}</b><span class="stat-note">Registered accounts</span></div>
+    <div class="stat"><small>Average order</small><b>${{ average }}</b><span class="stat-note">Average order value</span></div>
   </div>
-
-  <div class="two">
-    <div>
-      <h2>Orders by status</h2>
-      {% for status, n in counts.items() %}
-      <div class="row"><span>{{ status }}</span><b>{{ n }}</b></div>
-      {% endfor %}
-
-      <h2 style="margin-top:30px">Low stock</h2>
-      {% for p in low %}
-      <div class="row">
-        <a href="/admin/edit/{{ p.id }}">{{ p.name }}</a>
-        <b>{% if p.stock == 0 %}Sold out{% else %}{{ p.stock }} left{% endif %}</b>
-      </div>
-      {% else %}
-      <p><small>Nothing is running low.</small></p>
-      {% endfor %}
+  <div class="studio-columns">
+    <div class="admin-panel">
+      <div class="panel-heading"><div><span class="eyebrow">Fulfilment</span><h2>Orders by status</h2></div><a href="/admin/orders">View orders ↗</a></div>
+      <div class="status-list">{% for status, n in counts.items() %}<div class="status-row"><span class="status-dot status-{{ status|lower }}"></span><span>{{ status|title }}</span><b>{{ n }}</b></div>{% endfor %}</div>
+      <div class="panel-subheading"><div><span class="eyebrow">Inventory watch</span><h2>Low stock</h2></div></div>
+      {% for p in low %}<a class="inventory-row" href="/admin/edit/{{ p.id }}"><span><b>{{ p.name }}</b><small>{{ p.brand }} · {{ p.category }}</small></span><strong class="{% if p.stock == 0 %}stock-empty{% endif %}">{% if p.stock == 0 %}Sold out{% else %}{{ p.stock }} left{% endif %}</strong></a>{% else %}<p class="admin-empty">Nothing is running low. Nice work.</p>{% endfor %}
     </div>
-
-    <div>
-      <h2>Best sellers</h2>
-      {% for b in best %}
-      <div style="margin-bottom:14px">
-        <div class="row" style="border:0;padding-bottom:0"><span>{{ b.name }}</span><b>{{ b.sold }} sold</b></div>
-        <div class="bar" style="width: {{ b.sold * 100 // top }}%"></div>
-      </div>
-      {% else %}
-      <p><small>No sales yet.</small></p>
-      {% endfor %}
+    <div class="admin-panel">
+      <div class="panel-heading"><div><span class="eyebrow">What people choose</span><h2>Best sellers</h2></div></div>
+      {% for b in best %}<div class="seller-row"><div class="seller-meta"><b>{{ b.name }}</b><span>{{ b.sold }} sold</span></div><div class="seller-track"><div class="seller-fill" style="width: {{ b.sold * 100 // top }}%"></div></div></div>{% else %}<p class="admin-empty">Sales will appear here once orders come in.</p>{% endfor %}
     </div>
   </div>
 </section>
