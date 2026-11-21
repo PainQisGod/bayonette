@@ -15,7 +15,7 @@
       <div class="panel-heading"><div><span class="eyebrow">Fulfilment</span><h2>Orders by status</h2></div><a href="/admin/orders">View orders ↗</a></div>
       <div class="status-list">{% for status, n in counts.items() %}<div class="status-row"><span class="status-dot status-{{ status|lower }}"></span><span>{{ status|title }}</span><b>{{ n }}</b></div>{% endfor %}</div>
       <div class="panel-subheading"><div><span class="eyebrow">Inventory watch</span><h2>Low stock</h2></div></div>
-      {% for p in low %}<a class="inventory-row" href="/admin/edit/{{ p.id }}"><span><b>{{ p.name }}</b><small>{{ p.brand }} · {{ p.category }}</small></span><strong class="{% if p.stock == 0 %}stock-empty{% endif %}">{% if p.stock == 0 %}Sold out{% else %}{{ p.stock }} left{% endif %}</strong></a>{% else %}<p class="admin-empty">Nothing is running low. Nice work.</p>{% endfor %}
+      {% for p in low %}<a class="inventory-row" href="/admin/edit/{{ p.id }}"><span><b>{{ p.name }}</b><small>Inventory threshold reached</small></span><strong class="{% if p.stock == 0 %}stock-empty{% endif %}">{% if p.stock == 0 %}Sold out{% else %}{{ p.stock }} left{% endif %}</strong></a>{% else %}<p class="admin-empty">Nothing is running low. Nice work.</p>{% endfor %}
     </div>
     <div class="admin-panel">
       <div class="panel-heading"><div><span class="eyebrow">What people choose</span><h2>Best sellers</h2></div></div>
