@@ -26,14 +26,20 @@ Then open http://127.0.0.1:5000
 
 The admin email defaults to `admin@bayonette.com`. Set the `ADMIN_EMAIL`
 environment variable before starting the app to use a different address. That
-address is reserved and cannot be claimed through public registration.
+address is reserved and cannot be claimed through public registration. Create
+the administrator account from the project directory with:
+
+    flask --app app create-admin
+
+The command securely prompts for a password and creates or resets the configured
+administrator account.
 
 ## Security configuration
 
 Set a long, random `SECRET_KEY` environment variable before deploying so
 sessions remain secure across restarts. Also set
-`SESSION_COOKIE_SECURE=true` when serving the site over HTTPS. The app uses
-CSRF tokens for all POST forms and clears the session when users log in or out.
+`SESSION_COOKIE_SECURE=true` when serving the site over HTTPS. The app validates
+CSRF tokens on POST requests and clears the session when users log in or out.
 
 ## Files
 
