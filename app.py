@@ -461,22 +461,50 @@ def order_confirmation(id):
 def cancel_order(id):
     if "user_id" not in session:
         return redirect("/login")
+
+    admin = is_admin()
     conn = db()
-    order = conn.execute("SELECT * FROM orders WHERE id = ?", (id,)).fetchone()
-    if order is None or (order["user_id"] != session["user_id"] and not is_admin()):
+    try:
+        # Serialize cancellation so concurrent requests cannot restore stock twice.
+        conn.execute("BEGIN IMMEDIATE")
+        order = conn.execute("SELECT * FROM orders WHERE id = ?", (id,)).fetchone()
+
+        if order is None or (order["user_id"] != session["user_id"] and not admin):
+            conn.rollback()
+            return redirect("/orders")
+
+        if order["status"] != "pending":
+            conn.rollback()
+            flash("Only pending orders can be cancelled.")
+            return redirect("/admin/orders" if admin and request.form.get("from") == "admin" else "/orders")
+
+        items = conn.execute(
+            "SELECT product_id, quantity FROM order_items WHERE order_id = ?", (id,)
+        ).fetchall()
+        for item in items:
+            conn.execute(
+                "UPDATE products SET stock = stock + ? WHERE id = ?",
+                (item["quantity"], item["product_id"])
+            )
+
+        updated = conn.execute(
+            "UPDATE orders SET status = 'cancelled' WHERE id = ? AND status = 'pending'",
+            (id,)
+        )
+        if updated.rowcount != 1:
+            conn.rollback()
+            flash("This order has already been updated.")
+            return redirect("/orders")
+
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
         conn.close()
-        return redirect("/orders")
-    if order["status"] != "pending":
-        conn.close()
-        flash("Only pending orders can be cancelled.")
-        return redirect("/orders")
-    for item in conn.execute("SELECT * FROM order_items WHERE order_id = ?", (id,)).fetchall():
-        conn.execute("UPDATE products SET stock = stock + ? WHERE id = ?", (item["quantity"], item["product_id"]))
-    conn.execute("UPDATE orders SET status = 'cancelled' WHERE id = ?", (id,))
-    conn.commit()
-    conn.close()
+
     flash("Order #" + str(id) + " was cancelled.")
-    return redirect("/admin/orders" if is_admin() and request.form.get("from") == "admin" else "/orders")
+    return redirect("/admin/orders" if admin and request.form.get("from") == "admin" else "/orders")
 
 
 @app.route("/about")
@@ -777,19 +805,33 @@ def admin_orders():
 def set_status(id):
     if not is_admin():
         return redirect("/")
-    status = request.form["status"]
-    conn = db()
-    current = conn.execute("SELECT status FROM orders WHERE id = ?", (id,)).fetchone()
-    conn.close()
-    if current and current["status"] == "cancelled":
-        flash("Cancelled orders can't be changed.")
+    status = request.form.get("status", "")
+    if status not in STATUSES:
+        flash("Choose a valid order status.")
         return redirect("/admin/orders")
-    if status in STATUSES:
-        conn = db()
-        conn.execute("UPDATE orders SET status = ? WHERE id = ?", (status, id))
-        conn.commit()
+
+    conn = db()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        current = conn.execute("SELECT status FROM orders WHERE id = ?", (id,)).fetchone()
+        if current is None:
+            conn.rollback()
+            flash("Order not found.")
+        elif current["status"] == "cancelled":
+            conn.rollback()
+            flash("Cancelled orders can't be changed.")
+        else:
+            conn.execute(
+                "UPDATE orders SET status = ? WHERE id = ? AND status != 'cancelled'",
+                (status, id)
+            )
+            conn.commit()
+            flash("Order #" + str(id) + " is now " + status + ".")
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
         conn.close()
-        flash("Order #" + str(id) + " is now " + status + ".")
     return redirect("/admin/orders")
 
 
