@@ -1,17 +1,19 @@
 {% extends "base.html" %}
+{% block title %}Products — Bayonette Studio{% endblock %}
 {% block content %}
-<section>
-  <h2>Admin <span><a href="/admin/dashboard">Dashboard</a> <a href="/admin/orders">Orders</a> <a href="/admin/coupons">Coupons</a> <a href="/admin/messages">Messages</a> <a class="btn" href="/admin/new">+ New product</a></span></h2>
-  {% for p in products %}
-  <div class="row">
-    <span><b>{{ p.name }}</b> <small>{{ p.brand }} · {{ p.category }} · ${{ p.price }} · {{ p.stock }} in stock</small></span>
-    <span>
-      <a href="/admin/edit/{{ p.id }}">Edit</a>
-      <form class="inline" method="post" action="/admin/delete/{{ p.id }}" data-confirm="Delete this product?">
-        <button>x</button>
-      </form>
-    </span>
+<section class="studio-page">
+  <div class="studio-heading"><div><span class="eyebrow"><span class="eyebrow-line"></span>Bayonette / Studio</span><h1>Products<span>.</span></h1><p>Keep the collection considered and up to date.</p></div><a class="btn" href="/admin/new">＋ New product</a></div>
+  <div class="studio-nav"><a href="/admin/dashboard">Overview</a><a class="active" href="/admin">Products</a><a href="/admin/orders">Orders</a><a href="/admin/coupons">Coupons</a><a href="/admin/messages">Messages</a></div>
+  <div class="admin-list-heading"><div><h2>Collection inventory</h2><small>{{ products|length }} products in this view</small></div></div>
+  <div class="admin-product-list">
+    {% for p in products %}
+    <article class="admin-product-row">
+      <div class="admin-product-art" style="--product-hue: {{ p.hue }}"><span>{{ "%02d"|format(p.id) }}</span></div>
+      <div class="admin-product-main"><b>{{ p.name }}</b><small>{{ p.brand }} · {{ p.category }}</small><span>${{ p.price }}</span></div>
+      <div class="admin-product-stock"><small>Available stock</small><b class="{% if p.stock == 0 %}stock-empty{% elif p.stock <= 3 %}stock-low{% endif %}">{% if p.stock == 0 %}Sold out{% else %}{{ p.stock }}{% endif %}</b></div>
+      <div class="admin-product-actions"><a href="/admin/edit/{{ p.id }}">Edit ↗</a><form class="inline" method="post" action="/admin/delete/{{ p.id }}" data-confirm="Delete this product?"><button class="text-action danger" type="submit">Delete</button></form></div>
+    </article>
+    {% else %}<div class="admin-empty">No products yet. Add the first item to your collection.</div>{% endfor %}
   </div>
-  {% endfor %}
 </section>
 {% endblock %}
