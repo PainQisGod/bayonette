@@ -849,5 +849,34 @@ def delete_product(id):
 
 setup()
 
+@app.cli.command("create-admin")
+def create_admin():
+    """Create or reset the configured store administrator account."""
+    from getpass import getpass
+
+    email = ADMIN_EMAIL
+    password = getpass("Admin password (minimum 12 characters): ")
+    confirmation = getpass("Confirm admin password: ")
+    if len(password) < 12 or password != confirmation:
+        raise SystemExit("Passwords must match and contain at least 12 characters.")
+
+    conn = db()
+    existing = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+    password_hash = generate_password_hash(password)
+    if existing:
+        conn.execute(
+            "UPDATE users SET email = ?, password = ?, is_admin = 1 WHERE id = ?",
+            (email, password_hash, existing["id"])
+        )
+    else:
+        conn.execute(
+            "INSERT INTO users (email, password, is_admin) VALUES (?, ?, 1)",
+            (email, password_hash)
+        )
+    conn.commit()
+    conn.close()
+    print(f"Administrator account ready: {email}")
+
+
 if __name__ == "__main__":
     app.run(debug=True)
