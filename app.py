@@ -595,6 +595,10 @@ def profile():
             conn.close()
             flash("Email is required.")
             return redirect("/profile")
+        if email == ADMIN_EMAIL and not user["is_admin"]:
+            conn.close()
+            flash("That email is reserved for the store administrator.")
+            return redirect("/profile")
         if new_password and new_password != confirm_password:
             conn.close()
             flash("New passwords do not match.")
