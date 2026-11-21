@@ -1,12 +1,40 @@
 import sqlite3
 import os
 import math
-from flask import Flask, render_template, request, redirect, session, flash
+import secrets
+from flask import Flask, render_template, request, redirect, session, flash, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = "change-this-to-anything"
+app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "").lower() in {"1", "true", "yes"},
+)
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@bayonette.com").strip().lower()
+
+
+def csrf_token():
+    token = session.get("_csrf_token")
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session["_csrf_token"] = token
+    return token
+
+
+@app.context_processor
+def inject_csrf_token():
+    return {"csrf_token": csrf_token}
+
+
+@app.before_request
+def protect_csrf():
+    if request.method == "POST":
+        expected = session.get("_csrf_token")
+        submitted = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
+        if not expected or not submitted or not secrets.compare_digest(expected, submitted):
+            abort(400, description="Invalid or missing CSRF token.")
 
 STATUSES = ["pending", "shipped", "delivered"]
 PER_PAGE = 8
@@ -556,10 +584,13 @@ def save_address():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        email = request.form["email"].lower()
+        email = request.form["email"].strip().lower()
+        if ADMIN_EMAIL and email == ADMIN_EMAIL:
+            flash("This email is reserved for the store administrator.")
+            return redirect("/register")
         password = generate_password_hash(request.form["password"])
         conn = db()
-        is_admin = 1 if email == ADMIN_EMAIL else 0
+        is_admin = 0
         try:
             user_id = conn.execute("INSERT INTO users (email, password, is_admin) VALUES (?, ?, ?)", (email, password, is_admin)).lastrowid
             conn.commit()
@@ -568,6 +599,7 @@ def register():
             return redirect("/register")
         finally:
             conn.close()
+        session.clear()
         session["user_id"] = user_id
         session["email"] = email
         session["is_admin"] = is_admin
@@ -582,6 +614,7 @@ def login():
         user = conn.execute("SELECT * FROM users WHERE email = ?", (request.form["email"].lower(),)).fetchone()
         conn.close()
         if user and check_password_hash(user["password"], request.form["password"]):
+            session.clear()
             session["user_id"] = user["id"]
             session["email"] = user["email"]
             session["is_admin"] = user["is_admin"]
@@ -591,16 +624,20 @@ def login():
     return render_template("login.html", title="Log in")
 
 
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 def logout():
-    session.pop("user_id", None)
-    session.pop("email", None)
-    session.pop("is_admin", None)
+    session.clear()
     return redirect("/")
 
 
 def is_admin():
-    return session.get("email", "").lower() == ADMIN_EMAIL
+    user_id = session.get("user_id")
+    if not user_id:
+        return False
+    conn = db()
+    user = conn.execute("SELECT is_admin FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return bool(user and user["is_admin"])
 
 
 @app.route("/admin")
