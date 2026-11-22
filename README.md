@@ -1,55 +1,106 @@
 # Bayonette
 
-A small Flask shop with accounts, a cart, orders and an admin area. Data is stored in SQLite.
+A small Flask shop with customer accounts, a cart, checkout, order management and an admin area. Data is stored in SQLite.
 
 ## Features
 
 **Shop**
 - Product list with search, category filter and price sorting
-- Product pages, stock counts and "Sold out" labels
+- Product pages, stock counts and sold-out labels
 - Star ratings and written reviews (admins can delete reviews)
-- Cart, checkout and order history with statuses (pending, shipped, delivered)
-- Register and log in
-- Wishlist: save products with the heart button
+- Cart, checkout and order history with order statuses
+- Customer registration and login
+- Wishlist
 
-**Admin** (only the configured admin email can access the admin area)
+**Admin**
 - Add, edit and delete products
 - Update order statuses
-- Dashboard with total sales, best sellers and low stock
+- Dashboard with sales, best sellers and low-stock information
+- Manage coupons and customer messages
 
-## Run it
+## Requirements
+
+- Python 3.10+
+- Dependencies in `requirements.txt`
+
+## Local development
+
+Create and activate a virtual environment, then install dependencies:
+
+    python -m venv .venv
+    # Windows:
+    .venv\\Scripts\\activate
+    # macOS / Linux:
+    source .venv/bin/activate
 
     pip install -r requirements.txt
+
+Run the development server:
+
     python app.py
 
-Then open http://127.0.0.1:5000
+Open http://127.0.0.1:5000.
 
-The admin email defaults to `admin@bayonette.com`. Set the `ADMIN_EMAIL`
-environment variable before starting the app to use a different address. That
-address is reserved and cannot be claimed through public registration. Create
-the administrator account from the project directory with:
+For local development, Bayonette uses a generated secret key if `SECRET_KEY` is not set and stores its database in `shop.db` in the project directory.
+
+## Configuration
+
+Configure these environment variables before deploying:
+
+| Variable | Required in production | Description |
+|---|---:|---|
+| `APP_ENV` | Yes | Set to `production` to enable production safeguards. |
+| `SECRET_KEY` | Yes | Long, random secret used to sign sessions. Keep it private and stable across restarts and all app workers. |
+| `ADMIN_EMAIL` | Recommended | Email reserved for the store administrator. Defaults to `admin@bayonette.com`. |
+| `DATABASE_PATH` | Recommended | Absolute path to the SQLite database on persistent storage. Relative paths are resolved from the project directory. Defaults to `shop.db`. |
+| `SESSION_COOKIE_SECURE` | No | Defaults to secure cookies in production and non-secure cookies in local development. Set to `true` only when serving over HTTPS. |
+
+A starter template is available in `.env.example`. The application does not automatically load `.env` files; configure variables in your shell or hosting provider's environment settings.
+
+Generate a secret key with:
+
+    python -c "import secrets; print(secrets.token_hex(32))"
+
+Do not commit real secrets or production environment files.
+
+## Production deployment
+
+Install the dependencies and start the app with Gunicorn:
+
+    gunicorn --bind 0.0.0.0:$PORT app:app
+
+Configure the hosting provider to:
+1. Install dependencies with `pip install -r requirements.txt`.
+2. Set `APP_ENV=production`.
+3. Set a generated `SECRET_KEY`.
+4. Set `SESSION_COOKIE_SECURE=true` when HTTPS is enabled (the production default).
+5. Set `DATABASE_PATH` to a location on a persistent disk or volume.
+6. Use the Gunicorn command above as the start command.
+
+**SQLite storage matters:** the database file must live on persistent storage. Do not put it on an ephemeral filesystem or a temporary deployment directory. Back up the database regularly. SQLite is appropriate for a small, single-instance shop; if you later need multiple app instances or heavier concurrent writes, plan a migration to a managed database such as PostgreSQL.
+
+Create the administrator after the database volume is mounted and the production environment variables are configured:
 
     flask --app app create-admin
 
-The command securely prompts for a password and creates or resets the configured
-administrator account.
+The command securely prompts for a password of at least 12 characters and creates or resets the configured administrator account. Run it against the same database path used by the web process.
 
-## Security configuration
+Do not run the Flask development server or enable debug mode in production.
 
-Set a long, random `SECRET_KEY` environment variable before deploying so
-sessions remain secure across restarts. Also set
-`SESSION_COOKIE_SECURE=true` when serving the site over HTTPS. The app validates
-CSRF tokens on POST requests and clears the session when users log in or out.
+## Tests
 
-## Files
+Run the automated test suite with:
 
-- `app.py` - routes and database code
-- `templates/` - the pages
-- `static/css/` - the styling: `base.css` (every page), `shop.css`, `pages.css`, `admin.css`
-- `static/js/main.js` - dark mode button, cart pop-up and confirm checks
+    python -m unittest discover -s tests -v
+
+GitHub Actions runs the tests on pushes and pull requests.
+
+## Project structure
+
+- `app.py` - Flask routes, configuration and SQLite database setup
+- `templates/` - page templates
+- `static/css/` - site styling
+- `static/js/main.js` - theme, cart and wishlist interactions
 - `static/img/` - logo and favicon
-- `shop.db` - created on first run (delete it to reset everything)
-
-## Edit it
-
-Change the `PRODUCTS` and `CATEGORIES` lists at the top of `app.py`, then delete `shop.db` and run again. Or just use the admin page.
+- `tests/` - automated application tests
+- `shop.db` - local development database (created on first run; do not commit)
