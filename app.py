@@ -5,13 +5,34 @@ import secrets
 from flask import Flask, render_template, request, redirect, session, flash, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_ENV = os.environ.get("APP_ENV", "development").strip().lower()
+IS_PRODUCTION = APP_ENV == "production"
+
+secret_key = os.environ.get("SECRET_KEY")
+if IS_PRODUCTION and not secret_key:
+    raise RuntimeError("SECRET_KEY must be set when APP_ENV=production.")
+
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+app.secret_key = secret_key or secrets.token_hex(32)
+
+cookie_secure_setting = os.environ.get("SESSION_COOKIE_SECURE")
+cookie_secure = (
+    cookie_secure_setting.strip().lower() in {"1", "true", "yes"}
+    if cookie_secure_setting is not None
+    else IS_PRODUCTION
+)
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "").lower() in {"1", "true", "yes"},
+    SESSION_COOKIE_SECURE=cookie_secure,
 )
+
+DATABASE_PATH = os.environ.get("DATABASE_PATH", "shop.db")
+if not os.path.isabs(DATABASE_PATH):
+    DATABASE_PATH = os.path.join(BASE_DIR, DATABASE_PATH)
+os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
+
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@bayonette.com").strip().lower()
 
 
@@ -66,8 +87,9 @@ PRODUCTS = [
 
 
 def db():
-    conn = sqlite3.connect("shop.db")
+    conn = sqlite3.connect(DATABASE_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA busy_timeout = 30000")
     return conn
 
 
