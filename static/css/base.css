@@ -99,3 +99,8 @@ button.is-loading:after{content:"";width:11px;height:11px;border:1.5px solid cur
 @media(hover:hover){.product-visual:hover{border-color:var(--accent)}.wish:hover{transform:scale(1.12)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 @media(max-width:600px){#toast{right:16px;bottom:16px}}
+
+/* Keyboard accessibility */
+.skip-link{position:fixed;z-index:200;top:12px;left:12px;padding:10px 14px;background:var(--accent);color:#fff;transform:translateY(-160%);transition:transform .18s ease}
+.skip-link:focus{transform:translateY(0)}
+#main-content:focus{outline:none}
