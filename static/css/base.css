@@ -85,3 +85,17 @@ footer,.site-footer{background:#100f0d;color:#f2e9dc;margin-top:70px}
 .inline button{cursor:pointer}
 @media(max-width:1000px){.container{width:min(100% - 40px,1240px)}.topbar{gap:20px}.header-actions{gap:11px}.search-form input{width:110px}nav{gap:16px}}
 @media(max-width:760px){.announcement{padding:5px 12px;font-size:8px;gap:12px}.container{width:calc(100% - 32px)}.topbar{min-height:unset;padding-top:15px;padding-bottom:14px;display:grid;grid-template-columns:1fr auto;gap:14px}.logo{font-size:19px}.topbar nav{grid-column:1/-1;grid-row:2;overflow-x:auto;white-space:nowrap;padding:2px 0 5px}.header-actions{grid-column:1/-1;grid-row:3;justify-content:space-between;flex-wrap:wrap}.search-form{flex:1}.search-form input{width:100%;min-width:50px}.header-actions .theme-btn{display:none}main{padding-bottom:35px}.footer-main{grid-template-columns:1fr 1fr;gap:28px;padding-top:35px}.footer-brand{grid-column:1/-1}.footer-bottom{flex-direction:column}.two{grid-template-columns:1fr}.page{margin:32px auto;padding:24px}}
+
+/* Interaction polish */
+html{scroll-behavior:smooth}
+a,button,.product,.product-visual,.wish,.cart-link,.theme-btn{transition-property:color,background-color,border-color,box-shadow,transform,opacity;transition-duration:.2s;transition-timing-function:ease}
+button:disabled{cursor:wait}
+button.is-loading{opacity:.72;pointer-events:none}
+button.is-loading:after{content:"";width:11px;height:11px;border:1.5px solid currentColor;border-right-color:transparent;border-radius:50%;display:inline-block;margin-left:9px;vertical-align:-1px;animation:bayonette-spin .7s linear infinite}
+#toast{position:fixed;z-index:100;right:24px;bottom:24px;max-width:min(380px,calc(100vw - 32px));padding:13px 18px;background:var(--surface-raised);color:var(--text);border:1px solid var(--accent);box-shadow:var(--shadow);font-size:12px;line-height:1.5;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .22s ease,transform .22s ease}
+#toast.show{opacity:1;transform:translateY(0)}
+:focus-visible{scroll-margin-block:120px}
+@keyframes bayonette-spin{to{transform:rotate(360deg)}}
+@media(hover:hover){.product-visual:hover{border-color:var(--accent)}.wish:hover{transform:scale(1.12)}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+@media(max-width:600px){#toast{right:16px;bottom:16px}}
