@@ -1,1 +1,8 @@
-.env\n.env.*\n!.env.example\nshop.db\ninstance/\n.venv/\n__pycache__/\n*.pyc\n
+.env
+.env.*
+!.env.example
+shop.db
+instance/
+.venv/
+__pycache__/
+*.pyc
