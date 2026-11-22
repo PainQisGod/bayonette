@@ -1,1 +1,1 @@
-flask
+Flask>=3.0,<4.0\ngunicorn>=23.0,<24.0\n
